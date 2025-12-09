@@ -67,7 +67,7 @@ public class AuthService : IAuthService
 
     // Método de registro da interface
     public async Task<Usuario?> RegistrarAsync(string email, string senha, string nomeCompleto,
-        string? cpf, string? telefone, DateTime? dataNascimento, int? tipo)
+        string? cpf, string? telefone, DateTime? dataNascimento, int tipo)
     {
         // Validações
         if (await _context.Usuarios.AnyAsync(u => u.Email == email))
@@ -86,12 +86,12 @@ public class AuthService : IAuthService
         var senhaHash = HashPassword(senha);
 
         // Criação do usuário
-        var usuario = new Usuario(email, senhaHash, TipoUsuario.Aluno, nomeCompleto)
+        var usuario = new Usuario(email, senhaHash, nomeCompleto)
         {
             CPF = cpf,
             Telefone = telefone,
             Data_Nascimento = dataNascimento,
-            Tipo = 0
+            Tipo = tipo
         };
 
         await _context.Usuarios.AddAsync(usuario);

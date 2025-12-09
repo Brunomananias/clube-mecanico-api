@@ -1,5 +1,6 @@
 ﻿using ClubeMecanico_API.Domain.Enums;
 using ClubeMecanico_API.Domain.Exceptions;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace ClubeMecanico_API.Domain.Entities
 {
@@ -8,13 +9,16 @@ namespace ClubeMecanico_API.Domain.Entities
         public int Id { get; set; }
         public string Email { get; set; }
         public string SenhaHash { get; set; }
-        public TipoUsuario Tipo { get; set; }
+        public int Tipo { get; set; }
         public string Nome_Completo { get; set; }
         public string? CPF { get; set; }
         public string? Telefone { get; set; }
         public DateTime? Data_Nascimento { get; set; }
         public bool Ativo { get; set; }
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime Data_Cadastro { get; set; }
+
+        [Column(TypeName = "timestamp without time zone")]
         public DateTime? UltimoLogin { get; set; }
 
         // Navegação
@@ -24,11 +28,11 @@ namespace ClubeMecanico_API.Domain.Entities
 
         private Usuario() { }
 
-        public Usuario(string email, string senhaHash, TipoUsuario tipo, string nomeCompleto)
+        public Usuario(string email, string senhaHash, string nomeCompleto)
         {
             Email = email;
             SenhaHash = senhaHash;
-            Tipo = tipo;
+            
             Nome_Completo = nomeCompleto;
             Ativo = true;
             Data_Cadastro = DateTime.UtcNow;

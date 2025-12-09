@@ -14,7 +14,7 @@ namespace ClubeMecanico.Application.Interfaces
         // Métodos assíncronos
         Task<Usuario?> AutenticarAsync(string email, string senha);
         Task<Usuario?> RegistrarAsync(string email, string senha, string nomeCompleto,
-            string? cpf, string? telefone, DateTime? dataNascimento, int? tipo);
+            string? cpf, string? telefone, DateTime? dataNascimento, int tipo);
     }
 
     public interface ICursoService
@@ -52,7 +52,7 @@ namespace ClubeMecanico.Application.Interfaces
         public string NomeCompleto { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string? CPF { get; set; }
-        public TipoUsuario TipoUsuario { get; set; }
+        public int TipoUsuario { get; set; }
         public bool Ativo { get; set; }
     }
 

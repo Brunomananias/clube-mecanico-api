@@ -59,14 +59,14 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
         public async Task<IEnumerable<Usuario>> GetAlunosAsync()
         {
             return await _context.Usuarios
-                .Where(u => u.Ativo && u.Tipo == Domain.Enums.TipoUsuario.Aluno)
+                .Where(u => u.Ativo && u.Tipo == 0)
                 .ToListAsync();
         }
 
         public async Task<IEnumerable<Usuario>> GetAdministradoresAsync()
         {
             return await _context.Usuarios
-                .Where(u => u.Ativo && u.Tipo == Domain.Enums.TipoUsuario.Administrador)
+                .Where(u => u.Ativo && u.Tipo == 1)
                 .ToListAsync();
         }
     }

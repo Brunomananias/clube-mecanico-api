@@ -16,7 +16,7 @@ namespace ClubeMecanico_API.API.DTOs
         public string? CPF { get; set; }
         public string? Telefone { get; set; }
         public DateTime? Data_Nascimento { get; set; }
-        public int? Tipo { get; set; }
+        public int Tipo { get; set; }
     }
 
     public class CriarCursoDTO
