@@ -13,8 +13,22 @@ namespace ClubeMecanico.Application.Interfaces
 
         // Métodos assíncronos
         Task<Usuario?> AutenticarAsync(string email, string senha);
-        Task<Usuario?> RegistrarAsync(string email, string senha, string nomeCompleto,
-            string? cpf, string? telefone, DateTime? dataNascimento, int tipo);
+        Task<Usuario?> RegistrarAsync(
+         string email,
+         string senha,
+         string nomeCompleto,
+         string? cpf,
+         string? telefone,
+         DateTime? dataNascimento,
+         int tipo,
+         string? cep = null,
+         string? logradouro = null,
+         string? numero = null,
+         string? complemento = null,
+         string? bairro = null,
+         string? cidade = null,
+         string? estado = null,
+         string tipoEndereco = "principal");
     }
 
     public interface ICursoService
@@ -22,6 +36,7 @@ namespace ClubeMecanico.Application.Interfaces
         Task<IEnumerable<Curso>> GetAllCursosAsync();
         Task<Curso?> GetCursoByIdAsync(int id);
         Task<Curso> CriarCursoAsync(CriarCursoDTO cursoDto, int adminId);
+        Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
     }
 
     public interface IPedidoService

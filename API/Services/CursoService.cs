@@ -113,5 +113,10 @@ namespace ClubeMecanico.Application.Services
                 throw new ApplicationException("Erro ao criar curso", ex);
             }
         }
+
+        public async Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId)
+        {
+            return await _cursoRepository.GetTurmasByCursoIdAsync(cursoId);
+        }
     }
 }

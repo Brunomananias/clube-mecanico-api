@@ -5,23 +5,23 @@ namespace ClubeMecanico_API.Domain.Entities
     public class Turma : BaseEntity
     {
         public int Id { get; set; } 
-        public int CursoId { get; private set; }
-        public DateTime DataInicio { get; private set; }
-        public DateTime DataFim { get; private set; }
-        public string? Horario { get; private set; }
-        public string? Professor { get; private set; }
-        public int VagasTotal { get; private set; }
-        public int VagasDisponiveis { get; private set; }
-        public StatusTurma Status { get; private set; }
+        public int CursoId { get; set; }
+        public DateTime DataInicio { get; set; }
+        public DateTime DataFim { get; set; }
+        public string? Horario { get; set; }
+        public string? Professor { get; set; }
+        public int VagasTotal { get; set; }
+        public int VagasDisponiveis { get; set; }
+        public string Status { get; set; }
 
         // Navegação
         public virtual Curso Curso { get; private set; }
         public virtual ICollection<ItemPedido> ItensPedido { get; private set; }
         public virtual ICollection<CursoAluno> CursosAlunos { get; private set; }
 
-        private Turma() { }
+        public Turma() { }
 
-        public Turma(int cursoId, DateTime dataInicio, DateTime dataFim, int vagasTotal, string? professor = null, string? horario = null)
+        public Turma(int cursoId, DateTime dataInicio, DateTime dataFim, int vagasTotal, string? professor = null, string? horario = null, string? status = null)
         {
             CursoId = cursoId;
             DataInicio = dataInicio;
@@ -30,7 +30,7 @@ namespace ClubeMecanico_API.Domain.Entities
             VagasDisponiveis = vagasTotal;
             Professor = professor;
             Horario = horario;
-            Status = StatusTurma.Aberta;
+            Status = status;
 
             Validar();
         }
@@ -50,21 +50,21 @@ namespace ClubeMecanico_API.Domain.Entities
             if (VagasDisponiveis <= 0)
                 throw new DomainException("Não há vagas disponíveis nesta turma");
 
-            if (Status != StatusTurma.Aberta)
+            if (Status != "ABERTO")
                 throw new DomainException("Turma não está aberta para matrículas");
 
             VagasDisponiveis--;
 
             if (VagasDisponiveis == 0)
-                Status = StatusTurma.Lotada;
+                Status = "LOTADA";
         }
 
         public void LiberarVaga()
         {
             VagasDisponiveis++;
 
-            if (Status == StatusTurma.Lotada && VagasDisponiveis > 0)
-                Status = StatusTurma.Aberta;
+            if (Status == "LOTADA" && VagasDisponiveis > 0)
+                Status = "ABERTA";
         }
 
         public void IniciarTurma()
@@ -72,17 +72,17 @@ namespace ClubeMecanico_API.Domain.Entities
             if (DataInicio > DateTime.UtcNow.Date)
                 throw new DomainException("A turma ainda não começou");
 
-            Status = StatusTurma.EmAndamento;
+            Status = "EMANDAMENTO";
         }
 
         public void ConcluirTurma()
         {
-            Status = StatusTurma.Concluida;
+            Status = "CONCLUIDA";
         }
 
         public void CancelarTurma()
         {
-            Status = StatusTurma.Cancelada;
+            Status = "CANCELADA";
         }
 
         private void Validar()

@@ -4,31 +4,25 @@ namespace ClubeMecanico_API.Domain.Entities
 {
     public class CarrinhoTemporario : BaseEntity
     {
-        public string SessaoId { get; private set; }
-        public int CursoId { get; private set; }
-        public int? TurmaId { get; private set; }
-        public DateTime DataAdicao { get; private set; }
+        public int Id { get; set; }
+        public int UsuarioId { get; set; }
+        public int CursoId { get; set; }
+        public int? TurmaId { get; set; }
+        public DateTime DataAdicao { get; set; }
 
         // Navegação
-        public virtual Curso Curso { get; private set; }
-        public virtual Turma? Turma { get; private set; }
+        public virtual Curso Curso { get; set; }
+        public virtual Turma? Turma { get; set; }
 
-        private CarrinhoTemporario() { }
+        public CarrinhoTemporario() { }
 
-        public CarrinhoTemporario(string sessaoId, int cursoId, int? turmaId = null)
+        public CarrinhoTemporario(int usuarioId, int cursoId, int? turmaId = null)
         {
-            SessaoId = sessaoId;
+            UsuarioId = usuarioId;
             CursoId = cursoId;
             TurmaId = turmaId;
             DataAdicao = DateTime.UtcNow;
 
-            Validar();
-        }
-
-        private void Validar()
-        {
-            if (string.IsNullOrWhiteSpace(SessaoId))
-                throw new DomainException("ID da sessão é obrigatório");
         }
     }
 }

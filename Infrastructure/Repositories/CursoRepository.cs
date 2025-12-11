@@ -61,5 +61,13 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
                 .Take(10)
                 .ToListAsync();
         }
+
+        public async Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId)
+        {
+            return await _context.Turmas
+                .Where(t => t.CursoId == cursoId && t.Status == "ABERTO")
+                .OrderBy(t => t.DataInicio)
+                .ToListAsync();
+        }
     }
 }

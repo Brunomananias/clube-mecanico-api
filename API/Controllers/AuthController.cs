@@ -5,6 +5,7 @@ using ClubeMecanico_API.Domain.Enums;
 using ClubeMecanico_API.Infrastructure.Data;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -47,11 +48,12 @@ public class AuthController : ControllerBase
     }
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegistrarUsuarioDTO request)
     {
         try
         {
-            // Use o serviço em vez de fazer manualmente
+            // Use o serviço atualizado para incluir endereço
             var usuario = await _authService.RegistrarAsync(
                 request.Email,
                 request.Senha,
@@ -59,7 +61,15 @@ public class AuthController : ControllerBase
                 request.CPF,
                 request.Telefone,
                 request.Data_Nascimento,
-                request.Tipo);
+                request.Tipo,
+                request.Endereco.CEP,
+                request.Endereco.Logradouro,
+                request.Endereco.Numero,
+                request.Endereco.Complemento,
+                request.Endereco.Bairro,
+                request.Endereco.Cidade,
+                request.Endereco.Estado,
+                request.Endereco.Tipo);
 
             var token = _authService.GenerateJwtToken(usuario!.Id, usuario.Email);
 
@@ -73,7 +83,8 @@ public class AuthController : ControllerBase
                     usuario.Nome_Completo,
                     usuario.Email,
                     usuario.CPF,
-                    usuario.Tipo
+                    usuario.Tipo,
+                    Endereco = usuario.Enderecos?.FirstOrDefault() // Retorna o endereço principal
                 }
             });
         }

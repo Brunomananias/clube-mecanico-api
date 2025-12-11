@@ -26,15 +26,7 @@ namespace ClubeMecanico.Domain.Interfaces
     {
         Task<bool> CodigoExistsAsync(string codigo);
         Task<IEnumerable<Curso>> GetCursosDestaqueAsync();
-    }
-
-    public interface ITurmaRepository : IRepository<Turma>
-    {
-        Task<IEnumerable<Turma>> GetByCursoIdAsync(int cursoId);
-        Task<IEnumerable<Turma>> GetAllAbertasAsync();
-        Task<bool> HasVagaDisponivelAsync(int turmaId);
-        Task ReservarVagaAsync(int turmaId);
-        Task LiberarVagaAsync(int turmaId);
+        Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
     }
 
     public interface IPedidoRepository : IRepository<Pedido>

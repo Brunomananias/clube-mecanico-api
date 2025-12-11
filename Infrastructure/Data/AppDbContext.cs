@@ -18,6 +18,8 @@ namespace ClubeMecanico_API.Infrastructure.Data
         public DbSet<CursoAluno> CursosAlunos { get; set; }
         public DbSet<Certificado> Certificados { get; set; }
         public DbSet<ConteudoComplementar> ConteudosComplementares { get; set; }
+        public DbSet<Endereco> Enderecos { get; set; }
+        public DbSet<CarrinhoTemporario> CarrinhoTemporario { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -32,7 +34,7 @@ namespace ClubeMecanico_API.Infrastructure.Data
             modelBuilder.Entity<CursoAluno>().ToTable("cursosalunos");
             modelBuilder.Entity<Certificado>().ToTable("certificados");
             modelBuilder.Entity<ConteudoComplementar>().ToTable("conteudoscomplementares");
-
+            modelBuilder.Entity<CarrinhoTemporario>().ToTable("carrinho_temporario");
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 // Tabela
@@ -71,7 +73,19 @@ namespace ClubeMecanico_API.Infrastructure.Data
                 entity.Property(e => e.Nome_Completo).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.CPF).HasMaxLength(14);
                 entity.Property(e => e.Telefone).HasMaxLength(20);
-                entity.Property(e => e.Tipo).IsRequired().HasConversion<string>();
+                entity.Property(e => e.Tipo);
+                entity.Property(e => e.Data_Cadastro)
+             .HasColumnType("timestamp without time zone")
+             .HasDefaultValueSql("CURRENT_TIMESTAMP")
+             .HasColumnName("data_cadastro");
+
+                entity.Property(e => e.UltimoLogin)
+                      .HasColumnType("timestamp without time zone")
+                      .HasColumnName("ultimologin");
+
+                entity.Property(e => e.Data_Nascimento)
+                      .HasColumnType("timestamp without time zone")
+                      .HasColumnName("data_nascimento");
                 // Navegações
                 entity.HasMany(u => u.Pedidos)
                       .WithOne(p => p.Aluno)
@@ -86,6 +100,90 @@ namespace ClubeMecanico_API.Infrastructure.Data
                 entity.HasMany(u => u.Certificados)
                       .WithOne(c => c.Aluno)
                       .HasForeignKey(c => c.AlunoId)
+                      .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasMany(u => u.Enderecos)
+                      .WithOne(e => e.Usuario)
+                      .HasForeignKey(e => e.UsuarioId)
+                      .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // Configuração CarrinhoTemporario - ADICIONE ISSO:
+            modelBuilder.Entity<CarrinhoTemporario>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.UsuarioId)
+                    .IsRequired()
+                    .HasMaxLength(255)
+                    .HasColumnName("usuario_id");
+
+                entity.Property(e => e.CursoId)
+                    .IsRequired()
+                    .HasColumnName("curso_id");
+
+                entity.Property(e => e.TurmaId)
+                    .HasColumnName("turma_id");
+
+                entity.Property(e => e.DataAdicao)
+                    .HasColumnType("timestamp without time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                    .HasColumnName("data_adicao");
+
+                // Relacionamento com Curso
+                entity.HasOne(ct => ct.Curso)
+                    .WithMany()
+                    .HasForeignKey(ct => ct.CursoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relacionamento com Turma
+                entity.HasOne(ct => ct.Turma)
+                    .WithMany()
+                    .HasForeignKey(ct => ct.TurmaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Índice para performance
+                entity.HasIndex(e => e.UsuarioId);
+
+                // Índice composto para evitar duplicatas
+                entity.HasIndex(e => new { e.UsuarioId, e.CursoId, e.TurmaId })
+                      .IsUnique()
+                      .HasFilter("[turma_id] IS NOT NULL");
+            });
+
+            modelBuilder.Entity<Endereco>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UsuarioId)
+                 .HasColumnName("usuario_id")
+                 .IsRequired();
+                entity.Property(e => e.CEP).HasMaxLength(10);
+                entity.Property(e => e.Logradouro).HasMaxLength(200);
+                entity.Property(e => e.Numero).HasMaxLength(20);
+                entity.Property(e => e.Complemento).HasMaxLength(100);
+                entity.Property(e => e.Bairro).HasMaxLength(100);
+                entity.Property(e => e.Cidade).HasMaxLength(100);
+                entity.Property(e => e.Estado).HasMaxLength(2);
+                entity.Property(e => e.Tipo).HasMaxLength(20).HasDefaultValue("principal");
+                entity.Property(e => e.Ativo).IsRequired().HasDefaultValue(true);
+                entity.Property(e => e.DataCadastro)
+          .HasColumnType("timestamp without time zone")
+          .HasDefaultValueSql("CURRENT_TIMESTAMP")
+          .HasColumnName("data_cadastro");
+
+                entity.Property(e => e.DataAtualizacao)
+                      .HasColumnType("timestamp without time zone")
+                      .HasColumnName("data_atualizacao");
+
+                // Índices para melhor performance
+                entity.HasIndex(e => e.UsuarioId);
+                entity.HasIndex(e => new { e.UsuarioId, e.Tipo });
+                entity.HasIndex(e => e.CEP);
+
+                // Relacionamento com Usuario
+                entity.HasOne(e => e.Usuario)
+                      .WithMany(u => u.Enderecos)
+                      .HasForeignKey(e => e.UsuarioId)
                       .OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -178,13 +276,16 @@ namespace ClubeMecanico_API.Infrastructure.Data
             // Configuração Turma
             modelBuilder.Entity<Turma>(entity =>
             {
+                entity.Property(e => e.CursoId)
+                 .HasColumnName("curso_id")
+                 .IsRequired();
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.DataInicio).IsRequired();
-                entity.Property(e => e.DataFim).IsRequired();
+                entity.Property(e => e.DataInicio).IsRequired().HasColumnName("data_inicio"); ;
+                entity.Property(e => e.DataFim).IsRequired().HasColumnName("data_fim"); ;
                 entity.Property(e => e.Horario).HasMaxLength(50);
                 entity.Property(e => e.Professor).HasMaxLength(100);
-                entity.Property(e => e.VagasTotal).IsRequired();
-                entity.Property(e => e.VagasDisponiveis).IsRequired();
+                entity.Property(e => e.VagasTotal).IsRequired().HasColumnName("vagas_total"); ;
+                entity.Property(e => e.VagasDisponiveis).IsRequired().HasColumnName("vagas_disponiveis"); ;
                 entity.Property(e => e.Status).IsRequired().HasConversion<string>();
 
                 // Relacionamento com Curso

@@ -66,10 +66,24 @@ public class AuthService : IAuthService
     }
 
     // Método de registro da interface
-    public async Task<Usuario?> RegistrarAsync(string email, string senha, string nomeCompleto,
-        string? cpf, string? telefone, DateTime? dataNascimento, int tipo)
+    public async Task<Usuario?> RegistrarAsync(
+    string email,
+    string senha,
+    string nomeCompleto,
+    string? cpf,
+    string? telefone,
+    DateTime? dataNascimento,
+    int tipo,
+    string? cep = null,
+    string? logradouro = null,
+    string? numero = null,
+    string? complemento = null,
+    string? bairro = null,
+    string? cidade = null,
+    string? estado = null,
+    string tipoEndereco = "principal")
     {
-        // Validações
+        // Validações existentes
         if (await _context.Usuarios.AnyAsync(u => u.Email == email))
             throw new ArgumentException("Email já cadastrado");
 
@@ -91,15 +105,44 @@ public class AuthService : IAuthService
             CPF = cpf,
             Telefone = telefone,
             Data_Nascimento = dataNascimento,
+            Data_Cadastro = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified),
             Tipo = tipo
         };
 
         await _context.Usuarios.AddAsync(usuario);
+
+        // Criar endereço se algum dado foi fornecido
+        if (!string.IsNullOrWhiteSpace(cep) ||
+            !string.IsNullOrWhiteSpace(logradouro) ||
+            !string.IsNullOrWhiteSpace(cidade))
+        {
+            var endereco = new Endereco
+            {
+                Usuario = usuario, // Usando a navegação
+                CEP = cep,
+                Logradouro = logradouro,
+                Numero = numero,
+                Complemento = complemento,
+                Bairro = bairro,
+                Cidade = cidade,
+                Estado = estado,
+                Tipo = tipoEndereco,
+                Ativo = true,
+                DataCadastro = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified),
+            };
+
+            await _context.Enderecos.AddAsync(endereco);
+        }
+
         await _context.SaveChangesAsync();
+
+        // Carregar endereço para retorno
+        await _context.Entry(usuario)
+            .Collection(u => u.Enderecos)
+            .LoadAsync();
 
         return usuario;
     }
-
     public string GenerateJwtToken(long userId, string email)
     {
         // Use a configuração correta do seu appsettings.json

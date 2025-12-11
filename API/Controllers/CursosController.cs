@@ -1,6 +1,8 @@
 ﻿// API/Controllers/CursosController.cs
 using ClubeMecanico.Application.Interfaces;
 using ClubeMecanico_API.API.DTOs;
+using ClubeMecanico_API.API.DTOs.Requests;
+using ClubeMecanico_API.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -94,6 +96,40 @@ namespace ClubeMecanico_API.API.Controllers
             catch (Exception ex)
             {
                 return StatusCode(500, new { message = "Erro interno no servidor" });
+            }
+        }
+
+        [HttpGet("{id}/turmas")]
+        public async Task<IActionResult> GetTurmasDoCurso(int id)
+        {
+            try
+            {
+                var turmas = await _cursoService.GetTurmasByCursoIdAsync(id);
+
+                if (turmas == null || !turmas.Any())
+                {
+                    return Ok(new ApiResponse
+                    {
+                        Success = true,
+                        Mensagem = "Nenhuma turma disponível para este curso",
+                        Dados = new List<Turma>()
+                    });
+                }
+
+                return Ok(new ApiResponse
+                {
+                    Success = true,
+                    Dados = turmas
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao buscar turmas: {ex.Message}");
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = "Erro interno ao buscar turmas"
+                });
             }
         }
 

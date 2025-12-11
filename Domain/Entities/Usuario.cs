@@ -15,16 +15,15 @@ namespace ClubeMecanico_API.Domain.Entities
         public string? Telefone { get; set; }
         public DateTime? Data_Nascimento { get; set; }
         public bool Ativo { get; set; }
-        [Column(TypeName = "timestamp without time zone")]
         public DateTime Data_Cadastro { get; set; }
 
-        [Column(TypeName = "timestamp without time zone")]
         public DateTime? UltimoLogin { get; set; }
 
         // Navegação
         public virtual ICollection<Pedido> Pedidos { get; set; }
         public virtual ICollection<CursoAluno> CursosAlunos { get; set; }
         public virtual ICollection<Certificado> Certificados { get; set; }
+        public virtual ICollection<Endereco> Enderecos { get; set; }
 
         private Usuario() { }
 
@@ -35,7 +34,7 @@ namespace ClubeMecanico_API.Domain.Entities
             
             Nome_Completo = nomeCompleto;
             Ativo = true;
-            Data_Cadastro = DateTime.UtcNow;
+            Data_Cadastro = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
 
             Validar();
         }
@@ -55,7 +54,7 @@ namespace ClubeMecanico_API.Domain.Entities
 
         public void RegistrarLogin()
         {
-            UltimoLogin = DateTime.UtcNow;
+            UltimoLogin = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified);
         }
 
         public void Desativar()

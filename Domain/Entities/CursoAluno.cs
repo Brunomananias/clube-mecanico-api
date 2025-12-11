@@ -8,7 +8,7 @@ namespace ClubeMecanico_API.Domain.Entities
         public int AlunoId { get; private set; }
         public int CursoId { get; private set; }
         public int? TurmaId { get; private set; }
-        public StatusMatricula Status { get; private set; }
+        public string Status { get; private set; }
         public int Progresso { get; private set; }
         public DateTime DataMatricula { get; private set; }
         public DateTime? DataConclusao { get; private set; }
@@ -26,7 +26,7 @@ namespace ClubeMecanico_API.Domain.Entities
             AlunoId = alunoId;
             CursoId = cursoId;
             TurmaId = turmaId;
-            Status = StatusMatricula.Ativo;
+            Status = "ATIVO";
             Progresso = 0;
             DataMatricula = DateTime.UtcNow;
         }
@@ -44,14 +44,14 @@ namespace ClubeMecanico_API.Domain.Entities
 
         public void Concluir()
         {
-            Status = StatusMatricula.Concluido;
+            Status ="CONCLUIDO";
             DataConclusao = DateTime.UtcNow;
             Progresso = 100;
         }
 
         public void Cancelar()
         {
-            Status = StatusMatricula.Cancelado;
+            Status ="CANCELADO";
         }
     }
 
