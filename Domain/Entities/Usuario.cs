@@ -20,7 +20,6 @@ namespace ClubeMecanico_API.Domain.Entities
         public DateTime? UltimoLogin { get; set; }
 
         // Navegação
-        public virtual ICollection<Pedido> Pedidos { get; set; }
         public virtual ICollection<CursoAluno> CursosAlunos { get; set; }
         public virtual ICollection<Certificado> Certificados { get; set; }
         public virtual ICollection<Endereco> Enderecos { get; set; }

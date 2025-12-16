@@ -90,7 +90,6 @@ namespace ClubeMecanico.Application.Services
                 curso.Turmas = new List<Turma>();
                 curso.ConteudosComplementares = new List<ConteudoComplementar>();
                 curso.CursosAlunos = new List<CursoAluno>();
-                curso.ItensPedido = new List<ItemPedido>();
 
                 // Salvar no banco
                 await _cursoRepository.AddAsync(curso);

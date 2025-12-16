@@ -1,84 +1,30 @@
-﻿using ClubeMecanico_API.Domain.Exceptions;
+﻿// Models/Pedido.cs
+using ClubeMecanico_API.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-namespace ClubeMecanico_API.Domain.Entities
+namespace ClubeMecanico_API.Models
 {
-    public class Pedido : BaseEntity
+    public class Pedido
     {
         public int Id { get; set; }
-        public string NumeroPedido { get; private set; }
-        public int AlunoId { get; private set; }
-        public decimal ValorTotal { get; private set; }
-        public StatusPedido Status { get; private set; }
-        public DateTime DataPedido { get; private set; }
+        public string NumeroPedido { get; set; }
+        public int AlunoId { get; set; }
+        public decimal ValorTotal { get; set; }
+        public string Status { get; set; } = "pendente";
+        public DateTime DataPedido { get; set; } = DateTime.UtcNow;
+        public string? CupomCodigo { get; set; }
+        public decimal Desconto { get; set; }
+        public decimal Subtotal { get; set; }
+        public string? MpPreferenceId { get; set; }
+        public string? MpPaymentId { get; set; }
+        public string? LinkPagamento { get; set; }
+        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
 
-        // Navegação
-        public virtual Usuario Aluno { get; private set; }
-        public virtual ICollection<ItemPedido> Itens { get; private set; }
-        public virtual Pagamento? Pagamento { get; private set; }
-
-        private Pedido() { }
-
-        public Pedido(int alunoId, string numeroPedido, decimal valorTotal)
-        {
-            AlunoId = alunoId;
-            NumeroPedido = numeroPedido;
-            ValorTotal = valorTotal;
-            Status = StatusPedido.Pendente;
-            DataPedido = DateTime.UtcNow;
-
-            Validar();
-        }
-
-        public void AdicionarItem(ItemPedido item)
-        {
-            if (Itens == null)
-                Itens = new List<ItemPedido>();
-
-            Itens.Add(item);
-            ValorTotal += item.Preco;
-        }
-
-        public void Aprovar()
-        {
-            Status = StatusPedido.Aprovado;
-        }
-
-        public void Cancelar()
-        {
-            Status = StatusPedido.Cancelado;
-
-            // Liberar vagas nas turmas
-            foreach (var item in Itens)
-            {
-                if (item.TurmaId.HasValue)
-                {
-                    // A liberação da vaga será feita pelo serviço que tem acesso ao repositório
-                }
-            }
-        }
-
-        public void Concluir()
-        {
-            Status = StatusPedido.Concluido;
-        }
-
-        private void Validar()
-        {
-            if (ValorTotal <= 0)
-                throw new DomainException("Valor total do pedido deve ser maior que zero");
-
-            if (string.IsNullOrWhiteSpace(NumeroPedido))
-                throw new DomainException("Número do pedido é obrigatório");
-        }
-    }
-
-    public enum StatusPedido
-    {
-        Pendente,
-        Aprovado,
-        Processando,
-        Concluido,
-        Cancelado,
-        Reembolsado
+        // Navegações
+        public Usuario Aluno { get; set; }
+        public ICollection<ItemPedido> ItensPedido { get; set; } = new List<ItemPedido>();
+        public Pagamento Pagamento { get; set; }
     }
 }

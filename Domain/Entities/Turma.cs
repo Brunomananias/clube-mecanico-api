@@ -16,7 +16,6 @@ namespace ClubeMecanico_API.Domain.Entities
 
         // Navegação
         public virtual Curso Curso { get; private set; }
-        public virtual ICollection<ItemPedido> ItensPedido { get; private set; }
         public virtual ICollection<CursoAluno> CursosAlunos { get; private set; }
 
         public Turma() { }

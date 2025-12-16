@@ -5,21 +5,21 @@ namespace ClubeMecanico_API.Domain.Entities
     public class CursoAluno : BaseEntity
     {
         public int Id { get; set; }
-        public int AlunoId { get; private set; }
-        public int CursoId { get; private set; }
-        public int? TurmaId { get; private set; }
-        public string Status { get; private set; }
-        public int Progresso { get; private set; }
-        public DateTime DataMatricula { get; private set; }
-        public DateTime? DataConclusao { get; private set; }
+        public int AlunoId { get; set; }
+        public int CursoId { get; set; }
+        public int? TurmaId { get; set; }
+        public string Status { get; set; }
+        public int Progresso { get; set; }
+        public DateTime DataMatricula { get; set; }
+        public DateTime? DataConclusao { get; set; }
 
         // Navegação
-        public virtual Usuario Aluno { get; private set; }
-        public virtual Curso Curso { get; private set; }
-        public virtual Turma? Turma { get; private set; }
-        public virtual ICollection<Certificado> Certificados { get; private set; }
+        public virtual Usuario Aluno { get; set; }
+        public virtual Curso Curso { get; set; }
+        public virtual Turma? Turma { get; set; }
+        public virtual ICollection<Certificado> Certificados { get;  set; }
 
-        private CursoAluno() { }
+        public CursoAluno() { }
 
         public CursoAluno(int alunoId, int cursoId, int? turmaId = null)
         {

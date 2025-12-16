@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using ClubeMecanico_API.Domain.Entities;
+using ClubeMecanico_API.Models;
 
 namespace ClubeMecanico_API.Infrastructure.Data
 {
@@ -12,14 +13,14 @@ namespace ClubeMecanico_API.Infrastructure.Data
         public DbSet<Usuario> Usuarios { get; set; }
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Turma> Turmas { get; set; }
-        public DbSet<Pedido> Pedidos { get; set; }
-        public DbSet<ItemPedido> ItensPedido { get; set; }
-        public DbSet<Pagamento> Pagamentos { get; set; }
         public DbSet<CursoAluno> CursosAlunos { get; set; }
         public DbSet<Certificado> Certificados { get; set; }
         public DbSet<ConteudoComplementar> ConteudosComplementares { get; set; }
         public DbSet<Endereco> Enderecos { get; set; }
         public DbSet<CarrinhoTemporario> CarrinhoTemporario { get; set; }
+        public DbSet<Pedido> Pedidos { get; set; }
+        public DbSet<Pagamento> Pagamentos { get; set; }
+        public DbSet<ItemPedido> ItensPedido { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -28,13 +29,11 @@ namespace ClubeMecanico_API.Infrastructure.Data
             modelBuilder.Entity<Usuario>().ToTable("usuarios");
             modelBuilder.Entity<Curso>().ToTable("cursos");
             modelBuilder.Entity<Turma>().ToTable("turmas");
-            modelBuilder.Entity<Pedido>().ToTable("pedidos");
-            modelBuilder.Entity<ItemPedido>().ToTable("itenspedido");
-            modelBuilder.Entity<Pagamento>().ToTable("pagamentos");
             modelBuilder.Entity<CursoAluno>().ToTable("cursosalunos");
             modelBuilder.Entity<Certificado>().ToTable("certificados");
             modelBuilder.Entity<ConteudoComplementar>().ToTable("conteudoscomplementares");
             modelBuilder.Entity<CarrinhoTemporario>().ToTable("carrinho_temporario");
+            modelBuilder.Entity<ItemPedido>().ToTable("itens_pedido");
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
             {
                 // Tabela
@@ -65,8 +64,219 @@ namespace ClubeMecanico_API.Infrastructure.Data
                 }
             }
 
-            // Configuração Usuario
-            modelBuilder.Entity<Usuario>(entity =>
+            modelBuilder.Entity<Pedido>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.NumeroPedido)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("numero_pedido");
+
+                entity.Property(e => e.AlunoId)
+                    .IsRequired()
+                    .HasColumnName("aluno_id");
+
+                entity.Property(e => e.ValorTotal)
+                    .IsRequired()
+                    .HasPrecision(18, 2)
+                    .HasColumnName("valor_total");
+
+                entity.Property(e => e.Status)
+                    .HasMaxLength(50)
+                    .HasDefaultValue("pendente")
+                    .HasColumnName("status");
+
+                entity.Property(e => e.DataPedido)
+                    .HasColumnType("timestamp without time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                    .HasColumnName("data_pedido");
+
+                entity.Property(e => e.CupomCodigo)
+                    .HasMaxLength(50)
+                    .HasColumnName("cupom_codigo");
+
+                entity.Property(e => e.Desconto)
+                    .HasPrecision(18, 2)
+                    .HasDefaultValue(0)
+                    .HasColumnName("desconto");
+
+                entity.Property(e => e.Subtotal)
+                    .HasPrecision(18, 2)
+                    .HasDefaultValue(0)
+                    .HasColumnName("subtotal");
+
+                entity.Property(e => e.MpPreferenceId)
+                    .HasMaxLength(100)
+                    .HasColumnName("mp_preference_id");
+
+                entity.Property(e => e.MpPaymentId)
+                    .HasColumnName("mp_payment_id");
+
+                entity.Property(e => e.LinkPagamento)
+                    .HasMaxLength(500)
+                    .HasColumnName("link_pagamento");
+
+                entity.Property(e => e.UpdatedAt)
+                    .HasColumnType("timestamp without time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                    .HasColumnName("updated_at");
+
+                // Relacionamento com Usuario (Aluno)
+                entity.HasOne(p => p.Aluno)
+                    .WithMany()
+                    .HasForeignKey(p => p.AlunoId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configuração ItemPedido
+            modelBuilder.Entity<ItemPedido>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.PedidoId)
+                    .IsRequired()
+                    .HasColumnName("pedido_id");
+
+                entity.Property(e => e.CursoId)
+                    .IsRequired()
+                    .HasColumnName("curso_id");
+
+                entity.Property(e => e.TurmaId)
+                    .HasColumnName("turma_id");
+
+                entity.Property(e => e.Preco)
+                    .IsRequired()
+                    .HasPrecision(18, 2)
+                    .HasColumnName("preco");
+
+                entity.Property(e => e.DataCompra)
+                    .HasColumnType("timestamp without time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                    .HasColumnName("data_compra");
+
+                entity.Property(e => e.Quantidade)
+                    .HasDefaultValue(1)
+                    .HasColumnName("quantidade");
+
+                entity.Property(e => e.NomeCurso)
+                    .HasMaxLength(200)
+                    .HasColumnName("nome_curso");
+
+                entity.Property(e => e.Duracao)
+                    .HasMaxLength(50)
+                    .HasColumnName("duracao");
+
+                // Relacionamento com Pedido
+                entity.HasOne(ip => ip.Pedido)
+                    .WithMany(p => p.ItensPedido)
+                    .HasForeignKey(ip => ip.PedidoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Relacionamento com Curso
+                entity.HasOne(ip => ip.Curso)
+                    .WithMany()
+                    .HasForeignKey(ip => ip.CursoId)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                // Relacionamento com Turma (opcional)
+                entity.HasOne(ip => ip.Turma)
+                    .WithMany()
+                    .HasForeignKey(ip => ip.TurmaId)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            // Configuração Pagamento
+            modelBuilder.Entity<Pagamento>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.PedidoId)
+                    .IsRequired()
+                    .HasColumnName("pedido_id");
+
+                entity.Property(e => e.MetodoPagamento)
+                    .IsRequired()
+                    .HasMaxLength(50)
+                    .HasColumnName("metodo_pagamento");
+
+                entity.Property(e => e.Valor)
+                    .IsRequired()
+                    .HasPrecision(18, 2)
+                    .HasColumnName("valor");
+
+                entity.Property(e => e.Status)
+                    .HasMaxLength(50)
+                    .HasDefaultValue("pendente")
+                    .HasColumnName("status");
+
+                entity.Property(e => e.CodigoTransacao)
+                    .HasMaxLength(100)
+                    .HasColumnName("codigo_transacao");
+
+                entity.Property(e => e.DataPagamento)
+                    .HasColumnType("timestamp without time zone")
+                    .HasColumnName("data_pagamento");
+
+                entity.Property(e => e.DataCriacao)
+                    .HasColumnType("timestamp without time zone")
+                    .HasDefaultValueSql("CURRENT_TIMESTAMP")
+                    .HasColumnName("data_criacao");
+
+                entity.Property(e => e.MpPaymentId)
+                    .HasColumnName("mp_payment_id");
+
+                entity.Property(e => e.StatusDetail)
+                    .HasMaxLength(100)
+                    .HasColumnName("status_detail");
+
+                entity.Property(e => e.TipoPagamento)
+                    .HasMaxLength(50)
+                    .HasColumnName("tipo_pagamento");
+
+                entity.Property(e => e.Parcelas)
+                    .HasDefaultValue(1)
+                    .HasColumnName("parcelas");
+
+                entity.Property(e => e.Bandeira)
+                    .HasMaxLength(50)
+                    .HasColumnName("bandeira");
+
+                entity.Property(e => e.UltimosDigitos)
+                    .HasMaxLength(4)
+                    .HasColumnName("ultimos_digitos");
+
+                entity.Property(e => e.PixQrCode)
+                    .HasColumnName("pix_qr_code");
+
+                entity.Property(e => e.PixCopiaCola)
+                    .HasColumnName("pix_copia_cola");
+
+                entity.Property(e => e.BoletoUrl)
+                    .HasMaxLength(500)
+                    .HasColumnName("boleto_url");
+
+                entity.Property(e => e.BoletoLinhaDigitavel)
+                    .HasMaxLength(200)
+                    .HasColumnName("boleto_linha_digitavel");
+
+                entity.Property(e => e.DataExpiracaoBoleto)
+                    .HasColumnType("timestamp without time zone")
+                    .HasColumnName("data_expiracao_boleto");
+
+                entity.Property(e => e.NotificacaoRecebida)
+                    .HasDefaultValue(false)
+                    .HasColumnName("notificacao_recebida");
+
+                // Relacionamento com Pedido
+                entity.HasOne(p => p.Pedido)
+                    .WithOne(p => p.Pagamento)
+                    .HasForeignKey<Pagamento>(p => p.PedidoId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+        
+        // Configuração Usuario
+        modelBuilder.Entity<Usuario>(entity =>
             {
                 entity.HasKey(e => e.Id);
                 entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
@@ -87,10 +297,6 @@ namespace ClubeMecanico_API.Infrastructure.Data
                       .HasColumnType("timestamp without time zone")
                       .HasColumnName("data_nascimento");
                 // Navegações
-                entity.HasMany(u => u.Pedidos)
-                      .WithOne(p => p.Aluno)
-                      .HasForeignKey(p => p.AlunoId)
-                      .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasMany(u => u.CursosAlunos)
                       .WithOne(ca => ca.Aluno)
@@ -268,10 +474,6 @@ namespace ClubeMecanico_API.Infrastructure.Data
                     .HasForeignKey(ca => ca.CursoId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(c => c.ItensPedido)
-                    .WithOne(ip => ip.Curso)
-                    .HasForeignKey(ip => ip.CursoId)
-                    .OnDelete(DeleteBehavior.Cascade);
             });
             // Configuração Turma
             modelBuilder.Entity<Turma>(entity =>
@@ -294,12 +496,6 @@ namespace ClubeMecanico_API.Infrastructure.Data
                       .HasForeignKey(t => t.CursoId)
                       .OnDelete(DeleteBehavior.Restrict);
 
-                // Relacionamento com ItensPedido
-                entity.HasMany(t => t.ItensPedido)
-                      .WithOne(i => i.Turma)
-                      .HasForeignKey(i => i.TurmaId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
                 // Relacionamento com CursosAlunos
                 entity.HasMany(t => t.CursosAlunos)
                       .WithOne(ca => ca.Turma)
@@ -308,74 +504,10 @@ namespace ClubeMecanico_API.Infrastructure.Data
             });
 
             // Configuração Pedido
-            modelBuilder.Entity<Pedido>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.NumeroPedido).IsRequired().HasMaxLength(50);
-                entity.Property(e => e.ValorTotal).IsRequired().HasPrecision(18, 2);
-                entity.Property(e => e.Status).IsRequired().HasConversion<string>();
-                entity.Property(e => e.DataPedido).IsRequired();
-
-                // Relacionamento com Usuario (Aluno)
-                entity.HasOne(p => p.Aluno)
-                      .WithMany(u => u.Pedidos)
-                      .HasForeignKey(p => p.AlunoId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // RELACIONAMENTO 1-to-1 com Pagamento (RESOLVE O ERRO ANTERIOR)
-                entity.HasOne(p => p.Pagamento)
-                      .WithOne(p => p.Pedido)
-                      .HasForeignKey<Pagamento>(p => p.PedidoId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                // Relacionamento com ItensPedido
-                entity.HasMany(p => p.Itens)
-                      .WithOne(i => i.Pedido)
-                      .HasForeignKey(i => i.PedidoId)
-                      .OnDelete(DeleteBehavior.Cascade);
-            });
 
             // Configuração Pagamento
-            modelBuilder.Entity<Pagamento>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.PedidoId).IsRequired();
-                entity.Property(e => e.Metodo).IsRequired().HasConversion<string>();
-                entity.Property(e => e.Valor).IsRequired().HasPrecision(18, 2);
-                entity.Property(e => e.Status).IsRequired().HasConversion<string>();
-                entity.Property(e => e.CodigoTransacao).HasMaxLength(100);
-                entity.Property(e => e.DataCriacao).IsRequired();
-                entity.Property(e => e.DataPagamento).IsRequired(false);
-
-                // ÍNDICE ÚNICO para garantir relacionamento 1-to-1
-                entity.HasIndex(e => e.PedidoId).IsUnique();
-            });
 
             // Configuração ItemPedido
-            modelBuilder.Entity<ItemPedido>(entity =>
-            {
-                entity.HasKey(e => e.Id);
-                entity.Property(e => e.Preco).IsRequired().HasPrecision(18, 2);
-                entity.Property(e => e.DataCompra).IsRequired();
-
-                // Relacionamento com Pedido
-                entity.HasOne(i => i.Pedido)
-                      .WithMany(p => p.Itens)
-                      .HasForeignKey(i => i.PedidoId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
-                // Relacionamento com Curso
-                entity.HasOne(i => i.Curso)
-                      .WithMany()
-                      .HasForeignKey(i => i.CursoId)
-                      .OnDelete(DeleteBehavior.Restrict);
-
-                // Relacionamento com Turma (opcional)
-                entity.HasOne(i => i.Turma)
-                      .WithMany(t => t.ItensPedido)
-                      .HasForeignKey(i => i.TurmaId)
-                      .OnDelete(DeleteBehavior.Restrict);
-            });
 
             // Configuração CursoAluno
             modelBuilder.Entity<CursoAluno>(entity =>

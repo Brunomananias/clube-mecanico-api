@@ -39,19 +39,10 @@ namespace ClubeMecanico.Application.Interfaces
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
     }
 
-    public interface IPedidoService
-    {
-        Task<IEnumerable<Pedido>> GetPedidosByAlunoIdAsync(int alunoId);
-        Task<Pedido?> GetPedidoByIdAsync(int id);
-        Task<Pedido> CriarPedidoAsync(CriarPedidoDTO pedidoDto, int alunoId);
-        Task<ResultadoPagamento> ProcessarPagamentoAsync(int pedidoId, ProcessarPagamentoDTO pagamentoDto, int alunoId);
-    }
-
     public class ResultadoPagamento
     {
         public bool Sucesso { get; set; }
         public string Mensagem { get; set; }
-        public Pagamento? Pagamento { get; set; }
     }
 
     public class AuthResponseDTO

@@ -23,7 +23,6 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
         {
             return await _context.Turmas
                 .Include(t => t.Curso)
-                .Include(t => t.ItensPedido)
                 .Include(t => t.CursosAlunos)
                 .FirstOrDefaultAsync(t => t.Id == id);
         }
@@ -102,10 +101,5 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
                                ca.Status != "CANCELADO");
         }
 
-        public async Task<bool> HasPedidosAssociadosAsync(int turmaId)
-        {
-            return await _context.ItensPedido
-                .AnyAsync(ip => ip.TurmaId == turmaId);
-        }
     }
 }

@@ -29,10 +29,4 @@ namespace ClubeMecanico.Domain.Interfaces
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
     }
 
-    public interface IPedidoRepository : IRepository<Pedido>
-    {
-        Task<Pedido?> GetByNumeroAsync(string numeroPedido);
-        Task<IEnumerable<Pedido>> GetByAlunoIdAsync(int alunoId);
-        Task<string> GerarNumeroPedidoAsync();
-    }
 }

@@ -23,7 +23,6 @@ namespace ClubeMecanico_API.Domain.Entities
         public virtual ICollection<Turma> Turmas { get;  set; }
         public virtual ICollection<ConteudoComplementar> ConteudosComplementares { get;  set; }
         public virtual ICollection<CursoAluno> CursosAlunos { get;  set; }
-        public virtual ICollection<ItemPedido> ItensPedido { get;  set; }
 
         public Curso() { }
 

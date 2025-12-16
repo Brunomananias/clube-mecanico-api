@@ -194,10 +194,6 @@ namespace ClubeMecanico.Application.Services
                 if (turma.VagasDisponiveis < turma.VagasTotal)
                     throw new InvalidOperationException("Não é possível deletar uma turma com alunos matriculados");
 
-                // Verificar se há pedidos associados
-                if (turma.ItensPedido != null && turma.ItensPedido.Any())
-                    throw new InvalidOperationException("Não é possível deletar uma turma com pedidos associados");
-
                 await _turmaRepository.DeleteAsync(turma);
                 return true;
             }
