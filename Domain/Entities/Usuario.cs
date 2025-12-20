@@ -24,7 +24,7 @@ namespace ClubeMecanico_API.Domain.Entities
         public virtual ICollection<Certificado> Certificados { get; set; }
         public virtual ICollection<Endereco> Enderecos { get; set; }
 
-        private Usuario() { }
+        public Usuario() { }
 
         public Usuario(string email, string senhaHash, string nomeCompleto)
         {

@@ -14,14 +14,6 @@ namespace ClubeMecanico.Domain.Interfaces
 
 namespace ClubeMecanico.Domain.Interfaces
 {
-    public interface IUsuarioRepository : IRepository<Usuario>
-    {
-        Task<Usuario?> GetByEmailAsync(string email);
-        Task<bool> EmailExistsAsync(string email);
-        Task<IEnumerable<Usuario>> GetAlunosAsync();
-        Task<IEnumerable<Usuario>> GetAdministradoresAsync();
-    }
-
     public interface ICursoRepository : IRepository<Curso>
     {
         Task<bool> CodigoExistsAsync(string codigo);

@@ -9,6 +9,9 @@ using ClubeMecanico_API.Infrastructure.Data;
 using ClubeMecanico_API.Domain.Entities;
 using ClubeMecanico_API.Models;
 using Microsoft.EntityFrameworkCore;
+using MercadoPago.Client.Common;
+using MercadoPago.Client.Payment;
+using MercadoPago.Client;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -186,7 +189,7 @@ public class PagamentoController : ControllerBase
             };
 
             _context.Pedidos.Add(pedido);
-            await _context.SaveChangesAsync(); // SALVA PARA TER O ID
+            await _context.SaveChangesAsync();
 
             // 6. CRIAR ITENS DO PEDIDO
             foreach (var item in carrinhoItens)
@@ -216,7 +219,7 @@ public class PagamentoController : ControllerBase
             };
 
             _context.Pagamentos.Add(pagamento);
-            await _context.SaveChangesAsync(); // SALVA PARA TER O ID
+            await _context.SaveChangesAsync();
 
             // 8. CONFIGURAR MERCADO PAGO
             var accessToken = _configuration["MercadoPago:AccessToken"];
@@ -228,6 +231,7 @@ public class PagamentoController : ControllerBase
             {
                 items.Add(new PreferenceItemRequest
                 {
+                    Id = item.CursoId.ToString(),
                     Title = item.Curso?.Nome ?? "Curso Clube do Mecânico",
                     Description = $"Curso: {item.Curso?.Nome}",
                     Quantity = 1,
@@ -247,35 +251,76 @@ public class PagamentoController : ControllerBase
                     Pending = "https://8a315ad669e0.ngrok-free.app/pagamento/pendente?id=" + pedido.Id
                 },
                 AutoReturn = "approved",
-                ExternalReference = pedido.Id.ToString(), // LINK COM SEU PEDIDO
-                NotificationUrl = "https://9a528a07b1b2.ngrok-free.app/api/pagamento/webhook", // WEBHOOK
+                ExternalReference = pedido.Id.ToString(),
+                NotificationUrl = "https://9a528a07b1b2.ngrok-free.app/api/pagamento/webhook",
                 StatementDescriptor = "CLUBE MECANICO"
             };
 
-            // 11. CRIAR NO MERCADO PAGO
-            var client = new PreferenceClient();
-            Preference preference = await client.CreateAsync(preferenceRequest);
+            // 11. SE O CLIENTE ESCOLHEU PIX, CRIAR URL ESPECÍFICA PARA PIX
+            string paymentUrl;
+            if (request.MetodoPagamento?.ToLower() == "pix")
+            {
+                // Primeiro, criar a preferência normalmente
+                var client = new PreferenceClient();
+                Preference preference = await client.CreateAsync(preferenceRequest);
 
-            // 12. ATUALIZAR PEDIDO COM DADOS DO MP
-            pedido.MpPreferenceId = preference.Id;
-            pedido.LinkPagamento = preference.InitPoint;
-            pagamento.CodigoTransacao = preference.Id;
+                // Atualizar pedido
+                pedido.MpPreferenceId = preference.Id;
+                pagamento.CodigoTransacao = preference.Id;
+                pagamento.MetodoPagamento = "pix";
 
+                // Criar URL específica para PIX
+                paymentUrl = $"{preference.InitPoint}&payment_method=pix";
+
+                _logger.LogInformation($"PIX selecionado - URL específica criada: {paymentUrl}");
+            }
+            else
+            {
+                // Para cartão/boleto, usar normalmente
+                var client = new PreferenceClient();
+                Preference preference = await client.CreateAsync(preferenceRequest);
+
+                pedido.MpPreferenceId = preference.Id;
+                pagamento.CodigoTransacao = preference.Id;
+                paymentUrl = preference.InitPoint;
+            }
+
+            pedido.LinkPagamento = paymentUrl;
             await _context.SaveChangesAsync();
 
-            // 13. LOG PARA DEBUG
-            _logger.LogInformation($"Pedido {pedido.Id} criado com Preference ID: {preference.Id}");
-            _logger.LogInformation($"URL de pagamento: {preference.InitPoint}");
-            _logger.LogInformation($"Webhook configurado: {preferenceRequest.NotificationUrl}");
+            // 12. LOG
+            _logger.LogInformation($"Pedido {pedido.Id} criado");
+            _logger.LogInformation($"URL de pagamento: {paymentUrl}");
 
-            // 14. RETORNAR PARA O FRONTEND
+            // 13. RETORNAR PARA O FRONTEND
             return Ok(new
             {
                 success = true,
-                url = preference.InitPoint,
+                url = paymentUrl,
                 pedidoId = pedido.Id,
-                preferenceId = preference.Id,
                 numeroPedido = pedido.NumeroPedido,
+                metodoPagamento = request.MetodoPagamento
+            });
+        }
+        catch (MercadoPago.Error.MercadoPagoApiException ex)
+        {
+            _logger.LogError(ex, $"Erro na API do Mercado Pago: {ex.Message}");
+
+            // Erro específico do PIX não habilitado
+            if (ex.Message.Contains("invalid default_payment_method_id"))
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = "PIX não está habilitado na sua conta Mercado Pago. Ative o PIX nas configurações da sua conta primeiro.",
+                    errorCode = "PIX_NOT_ENABLED"
+                });
+            }
+
+            return BadRequest(new
+            {
+                success = false,
+                message = ex.Message
             });
         }
         catch (Exception ex)
