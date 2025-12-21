@@ -9,17 +9,36 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using ClubeMecanico_API.Infrastructure.Repositories;
 using ClubeMecanico.Domain.Interfaces;
 using ClubeMecanico.Application.Services;
+using System.Text.Json.Serialization;
+using ClubeMecanico_API.Domain.Interfaces;
+using MercadoPago.Config;
+using YourProject.Repositories;
+using ClubeMecanico_API.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+MercadoPagoConfig.AccessToken = builder.Configuration["MercadoPago:AccessToken"];
 
 // 1. Configuração do banco de dados
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+builder.Services.AddDistributedMemoryCache(); // Necessário para sessão
 
+builder.Services.AddSession(options =>
+{
+    options.IdleTimeout = TimeSpan.FromMinutes(30); // Tempo de expiração
+    options.Cookie.HttpOnly = true; // Segurança
+    options.Cookie.IsEssential = true; // GDPR
+    options.Cookie.SameSite = SameSiteMode.Strict;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.Always; // Use sempre em produção
+});
 // 2. Serviços de aplicação
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ICursoRepository, CursoRepository>();
 builder.Services.AddScoped<ICursoService, CursoService>();
+builder.Services.AddScoped<ITurmaService, TurmaService>();
+builder.Services.AddScoped<ITurmaRepository, TurmaRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 // 3. Configuração da autenticação JWT
 var jwtKey = builder.Configuration["JwtSettings:Key"];
 if (string.IsNullOrEmpty(jwtKey))
@@ -45,8 +64,13 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-// 4. Controllers
-builder.Services.AddControllers();
+// Program.cs
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
 // 5. Configuração do Swagger
 builder.Services.AddEndpointsApiExplorer();
@@ -121,6 +145,7 @@ app.UseSwaggerUI(c =>
 // Middlewares na ORDEM CORRETA
 app.UseHttpsRedirection(); // Adicione esta linha
 app.UseStaticFiles();
+app.UseSession();
 app.UseRouting(); // Adicione esta linha
 app.UseCors("AllowAll");
 app.UseAuthentication();
