@@ -1,0 +1,9 @@
+{
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "dotnet restore && dotnet publish -c Release -o ./out"
+  },
+  "start": {
+    "command": "dotnet ./out/ClubeMecanico_API.dll"
+  }
+}

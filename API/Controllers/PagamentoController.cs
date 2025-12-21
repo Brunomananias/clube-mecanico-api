@@ -246,13 +246,13 @@ public class PagamentoController : ControllerBase
                 Items = items,
                 BackUrls = new PreferenceBackUrlsRequest
                 {
-                    Success = "https://8a315ad669e0.ngrok-free.app/pagamento/sucesso?id=" + pedido.Id,
-                    Failure = "https://8a315ad669e0.ngrok-free.app/pagamento/falha?id=" + pedido.Id,
-                    Pending = "https://8a315ad669e0.ngrok-free.app/pagamento/pendente?id=" + pedido.Id
+                    Success = "https://clubedomecanico.vercel.app/pagamento/sucesso",
+                    Failure = "https://clubedomecanico.vercel.app/pagamento/falha",
+                    Pending = "https://clubedomecanico.vercel.app/pagamento/pendente"
                 },
                 AutoReturn = "approved",
                 ExternalReference = pedido.Id.ToString(),
-                NotificationUrl = "https://9a528a07b1b2.ngrok-free.app/api/pagamento/webhook",
+                NotificationUrl = "https://clubedomecanico.vercel.app/api/pagamento/webhook",
                 StatementDescriptor = "CLUBE MECANICO"
             };
 
