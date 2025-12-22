@@ -387,7 +387,7 @@ public class PagamentoController : ControllerBase
                 },
                 AutoReturn = "approved",
                 ExternalReference = pedido.Id.ToString(),
-                NotificationUrl = "https://clubedomecanico.vercel.app/api/pagamento/webhook",
+                NotificationUrl = "https://clube-mecanico-api.onrender.com/api/pagamento/webhook",
                 StatementDescriptor = "CLUBE MECANICO"
             };
 
