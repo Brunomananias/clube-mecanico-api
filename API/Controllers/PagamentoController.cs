@@ -12,6 +12,7 @@ using Microsoft.EntityFrameworkCore;
 using MercadoPago.Client.Common;
 using MercadoPago.Client.Payment;
 using MercadoPago.Client;
+using System.Text.Json;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -32,86 +33,220 @@ public class PagamentoController : ControllerBase
     }
 
     [HttpPost("webhook")]
-    public async Task<IActionResult> Webhook([FromQuery] string topic, [FromQuery] string id)
+    [AllowAnonymous]
+    public async Task<IActionResult> Webhook()
     {
         try
         {
-            // Configurar token
+            // 1. LER O BODY COMPLETO
+            using var reader = new StreamReader(Request.Body);
+            var json = await reader.ReadToEndAsync();
+
+            _logger.LogInformation($"=== WEBHOOK RECEBIDO ===");
+            _logger.LogInformation($"Body: {json}");
+
+            // 2. DESSERIALIZAR
+            var webhookData = JsonSerializer.Deserialize<JsonDocument>(json);
+
+            // 3. EXTRAIR DADOS
+            var type = webhookData.RootElement.GetProperty("type").GetString();
+            var action = webhookData.RootElement.GetProperty("action").GetString();
+            var dataId = webhookData.RootElement.GetProperty("data").GetProperty("id").GetString();
+
+            _logger.LogInformation($"Tipo: {type}, Ação: {action}, DataId: {dataId}");
+
+            // 4. CONFIGURAR TOKEN
             var accessToken = _configuration["MercadoPago:AccessToken"];
             MercadoPagoConfig.AccessToken = accessToken;
 
-            // Buscar o pagamento no Mercado Pago
+            // 5. SÓ PROCESSAR SE FOR PAGAMENTO
+            if (type != "payment")
+            {
+                _logger.LogInformation($"Webhook do tipo {type} ignorado.");
+                return Ok();
+            }
+
+            // 6. BUSCAR PAGAMENTO NO MERCADO PAGO
             var client = new MercadoPago.Client.Payment.PaymentClient();
-            var payment = await client.GetAsync(long.Parse(id));
 
-            if (payment == null)
-                return NotFound();
+            if (!long.TryParse(dataId, out long paymentId))
+            {
+                _logger.LogError($"ID de pagamento inválido: {dataId}");
+                return BadRequest("ID inválido");
+            }
 
-            // Buscar pedido no seu banco usando o ExternalReference
-            var pedidoId = payment.ExternalReference;
+            MercadoPago.Resource.Payment.Payment payment;
 
+            try
+            {
+                payment = await client.GetAsync(paymentId);
+                _logger.LogInformation($"Pagamento encontrado: {payment.Id}, Status: {payment.Status}");
+            }
+            catch (MercadoPago.Error.MercadoPagoApiException ex) when (ex.StatusCode == 404)
+            {
+                _logger.LogWarning($"Pagamento {paymentId} não encontrado.");
+                return Ok();
+            }
+
+            // 7. VERIFICAR EXTERNAL REFERENCE (seu PedidoId)
+            if (string.IsNullOrEmpty(payment.ExternalReference))
+            {
+                _logger.LogError($"ExternalReference não encontrado no pagamento {paymentId}");
+                return BadRequest("ExternalReference não encontrado");
+            }
+
+            if (!int.TryParse(payment.ExternalReference, out int pedidoId))
+            {
+                _logger.LogError($"ExternalReference inválido: {payment.ExternalReference}");
+                return BadRequest("ExternalReference inválido");
+            }
+
+            // 8. BUSCAR PEDIDO NO BANCO
             var pedido = await _context.Pedidos
-                .FirstOrDefaultAsync(p => p.Id == int.Parse(pedidoId));
+                .Include(p => p.Pagamento)
+                .FirstOrDefaultAsync(p => p.Id == pedidoId);
 
             if (pedido == null)
-                return NotFound("Pedido não encontrado");
-
-            // Carregar itens do pedido
-            var itensPedido = await _context.ItensPedido
-                .Where(ip => ip.PedidoId == pedido.Id)
-                .ToListAsync();
-
-            // Atualizar status do pagamento
-            var pagamento = await _context.Pagamentos
-                .FirstOrDefaultAsync(p => p.PedidoId == pedido.Id);
-
-            if (pagamento != null)
             {
-                pagamento.Status = payment.Status.ToString();
-                pagamento.MpPaymentId = payment.Id?.ToString();
-                pagamento.DataCriacao = DateTime.UtcNow;
-
-                // CORREÇÃO: Verificar status como string
-                var status = payment.Status.ToString().ToLower();
-
-                if (status == "approved")
-                {
-                    pagamento.DataPagamento = DateTime.UtcNow;
-
-                    // Atualizar status do pedido
-                    pedido.Status = "Aprovado";
-
-                    // Matricular o aluno nos cursos
-                    await MatricularAluno(pedido.Id, pedido.AlunoId, itensPedido);
-                }
-                else if (status == "cancelled" || status == "rejected")
-                {
-                    pedido.Status = "Cancelado";
-                }
-                else if (status == "pending")
-                {
-                    pedido.Status = "Pendente";
-                }
-                else if (status == "in_process" || status == "in_mediation")
-                {
-                    pedido.Status = "EmProcessamento";
-                }
-                else if (status == "refunded" || status == "charged_back")
-                {
-                    pedido.Status = "Reembolsado";
-                }
-
-                await _context.SaveChangesAsync();
+                _logger.LogError($"Pedido {pedidoId} não encontrado no banco");
+                return NotFound("Pedido não encontrado");
             }
+
+            _logger.LogInformation($"Pedido encontrado: {pedido.Id}, Status atual: {pedido.Status}");
+
+            // 9. ATUALIZAR/CRIAR PAGAMENTO
+            var pagamento = pedido.Pagamento ?? new Pagamento { PedidoId = pedido.Id };
+
+            pagamento.Status = payment.Status.ToString();
+            pagamento.MpPaymentId = payment.Id?.ToString();
+            pagamento.DataPagamento = DateTime.Now;
+
+            if (pagamento.Id == 0)
+            {
+                pagamento.DataCriacao = DateTime.Now;
+                _context.Pagamentos.Add(pagamento);
+            }
+
+            // 10. ATUALIZAR STATUS DO PEDIDO
+            var status = payment.Status.ToString().ToLower();
+
+            switch (status)
+            {
+                case "approved":
+                    pedido.Status = "aprovado";
+                    pagamento.DataPagamento = DateTime.Now;
+
+                    // Matricular aluno nos cursos - CORRIGIDO para usar cursos_alunos
+                    await MatricularAlunoNosCursos(pedido.Id, pedido.AlunoId);
+                    _logger.LogInformation($"Pedido {pedidoId} APROVADO - Aluno matriculado");
+                    break;
+
+                case "pending":
+                    pedido.Status = "pendente";
+                    _logger.LogInformation($"Pedido {pedidoId} PENDENTE");
+                    break;
+
+                case "in_process":
+                case "in_mediation":
+                    pedido.Status = "em_processamento";
+                    _logger.LogInformation($"Pedido {pedidoId} EM PROCESSAMENTO");
+                    break;
+
+                case "cancelled":
+                case "rejected":
+                    pedido.Status = "cancelado";
+                    _logger.LogInformation($"Pedido {pedidoId} CANCELADO");
+                    break;
+
+                case "refunded":
+                case "charged_back":
+                    pedido.Status = "reembolsado";
+                    _logger.LogInformation($"Pedido {pedidoId} REEMBOLSADO");
+                    break;
+
+                default:
+                    pedido.Status = "desconhecido";
+                    _logger.LogWarning($"Pedido {pedidoId} status desconhecido: {status}");
+                    break;
+            }
+
+            pedido.UpdatedAt = DateTime.Now;
+
+            // 11. SALVAR ALTERAÇÕES
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation($"Pedido {pedidoId} atualizado com sucesso para status: {pedido.Status}");
 
             return Ok();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro no webhook do Mercado Pago");
-            return StatusCode(500);
+            return Ok();
         }
     }
+
+    private async Task MatricularAlunoNosCursos(int pedidoId, int alunoId)
+    {
+        try
+        {
+            // Buscar itens do pedido (cursos comprados)
+            var itensPedido = await _context.ItensPedido
+                .Where(ip => ip.PedidoId == pedidoId)
+                .Include(ip => ip.Curso)
+                .Include(ip => ip.Turma)
+                .ToListAsync();
+
+            foreach (var item in itensPedido)
+            {
+                // Verificar se já existe registro na tabela cursos_alunos
+                var cursoAlunoExistente = await _context.CursosAlunos
+                    .FirstOrDefaultAsync(ca =>
+                        ca.AlunoId == alunoId &&
+                        ca.CursoId == item.CursoId &&
+                        ca.TurmaId == item.TurmaId);
+
+                if (cursoAlunoExistente == null)
+                {
+                    // Criar novo registro na tabela cursos_alunos
+                    var cursoAluno = new CursoAluno
+                    {
+                        AlunoId = alunoId,
+                        CursoId = item.CursoId,
+                        TurmaId = item.TurmaId,
+                        Status = "ativo", // ou "matriculado", depende da sua lógica
+                        Progresso = 0, // Inicia com 0% de progresso
+                        DataMatricula = DateTime.Now,
+                    };
+
+                    _context.CursosAlunos.Add(cursoAluno);
+                    _logger.LogInformation($"Aluno {alunoId} matriculado no curso {item.CursoId}, turma {item.TurmaId}");
+                }
+                else
+                {
+                    // Se já existe, apenas atualizar status se necessário
+                    if (cursoAlunoExistente.Status != "ativo")
+                    {
+                        cursoAlunoExistente.Status = "ativo";
+                        cursoAlunoExistente.DataMatricula = DateTime.Now;
+                        _logger.LogInformation($"Matrícula do aluno {alunoId} no curso {item.CursoId} reativada");
+                    }
+                    else
+                    {
+                        _logger.LogInformation($"Aluno {alunoId} já está matriculado no curso {item.CursoId}");
+                    }
+                }
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, $"Erro ao matricular aluno {alunoId} nos cursos do pedido {pedidoId}");
+            throw;
+        }
+    }
+
 
     private async Task MatricularAluno(int pedidoId, int alunoId, List<ItemPedido> itensPedido)
     {
