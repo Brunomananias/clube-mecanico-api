@@ -337,7 +337,7 @@ public class PagamentoController : ControllerBase
                     Preco = item.Curso?.Valor ?? 0,
                     Quantidade = 1,
                     NomeCurso = item.Curso?.Nome,
-                    Duracao = item.Curso?.DuracaoHoras,
+                    Duracao = item.Curso?.DuracaoHoras.ToString(),
                     DataCompra = DateTime.Now
                 };
 

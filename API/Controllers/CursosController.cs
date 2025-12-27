@@ -133,6 +133,73 @@ namespace ClubeMecanico_API.API.Controllers
             }
         }
 
+        // API/Controllers/CursosController.cs - Adicione este método
+        [HttpPost("matricular-aluno")]
+        [Authorize]
+        public async Task<IActionResult> MatricularAluno([FromBody] MatricularAlunoCursoDTO matriculaDto)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                // Obter ID do usuário autenticado (aluno ou admin)
+                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int usuarioId))
+                    return Unauthorized(new { message = "Usuário não autenticado" });
+
+                // Verificar se o usuário tem permissão (aluno ou administrador)
+                var roleClaim = User.FindFirst(ClaimTypes.Role);
+                var isAdmin = roleClaim?.Value == "1" || roleClaim?.Value == "Administrador";
+
+                // Se não for admin, só pode se matricular ele mesmo
+                if (!isAdmin && usuarioId != matriculaDto.AlunoId)
+                    return Forbid();
+
+                var matricula = await _cursoService.MatricularAlunoAsync(matriculaDto, usuarioId);
+
+                return Ok(new ApiResponse
+                {
+                    Success = true,
+                    Mensagem = "Aluno matriculado com sucesso!",
+                    Dados = matricula
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = ex.Message
+                });
+            }
+            catch (InvalidOperationException ex)
+            {
+                return Conflict(new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = ex.Message
+                });
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao matricular aluno: {ex.Message}");
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = "Erro interno no servidor ao realizar matrícula"
+                });
+            }
+        }
+
         // Comente os outros métodos por enquanto
         /*
         [HttpPut("{id}")]

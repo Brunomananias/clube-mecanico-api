@@ -1,4 +1,5 @@
-﻿using ClubeMecanico_API.Domain.Entities;
+﻿using ClubeMecanico.Domain.Interfaces;
+using ClubeMecanico_API.Domain.Entities;
 
 namespace ClubeMecanico.Domain.Interfaces
 {
@@ -21,4 +22,12 @@ namespace ClubeMecanico.Domain.Interfaces
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
     }
 
+    public interface ICursoAlunoRepository : IRepository<CursoAluno>
+    {
+        Task<CursoAluno> GetMatriculaPorAlunoETurmaAsync(int alunoId, int turmaId);
+        Task<int> CountMatriculasPorTurmaAsync(int turmaId);
+        Task<IEnumerable<CursoAluno>> GetMatriculasPorAlunoAsync(int alunoId);
+        Task<IEnumerable<CursoAluno>> GetMatriculasPorTurmaAsync(int turmaId);
+    }
 }
+

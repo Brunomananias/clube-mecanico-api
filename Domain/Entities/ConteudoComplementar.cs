@@ -5,19 +5,16 @@ namespace ClubeMecanico_API.Domain.Entities
     public class ConteudoComplementar : BaseEntity
     {
         public int Id { get; set; }
-        public int CursoId { get; private set; }
-        public string Titulo { get; private set; }
-        public TipoConteudo Tipo { get; private set; }
-        public string Url { get; private set; }
-        public string? Descricao { get; private set; }
-        public DateTime DataCriacao { get; private set; }
+        public int CursoId { get; set; }
+        public string Titulo { get; set; }
+        public string Tipo { get; set; }
+        public string Url { get; set; }
+        public string? Descricao { get; set; }
+        public DateTime DataCriacao { get; set; }
 
-        // Navegação
-        public virtual Curso Curso { get; private set; }
+        public ConteudoComplementar() { }
 
-        private ConteudoComplementar() { }
-
-        public ConteudoComplementar(int cursoId, string titulo, TipoConteudo tipo, string url)
+        public ConteudoComplementar(int cursoId, string titulo, string tipo, string url)
         {
             CursoId = cursoId;
             Titulo = titulo;

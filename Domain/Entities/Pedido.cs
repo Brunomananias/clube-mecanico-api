@@ -13,14 +13,14 @@ namespace ClubeMecanico_API.Models
         public int AlunoId { get; set; }
         public decimal ValorTotal { get; set; }
         public string Status { get; set; } = "pendente";
-        public DateTime DataPedido { get; set; } = DateTime.UtcNow;
+        public DateTime DataPedido { get; set; } = DateTime.Now;
         public string? CupomCodigo { get; set; }
         public decimal Desconto { get; set; }
         public decimal Subtotal { get; set; }
         public string? MpPreferenceId { get; set; }
         public string? MpPaymentId { get; set; }
         public string? LinkPagamento { get; set; }
-        public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
         // Navegações
         public Usuario Aluno { get; set; }

@@ -14,6 +14,7 @@ using ClubeMecanico_API.Domain.Interfaces;
 using MercadoPago.Config;
 using YourProject.Repositories;
 using ClubeMecanico_API.API.Services;
+using Microsoft.AspNetCore.Http.Features;
 
 var builder = WebApplication.CreateBuilder(args);
 MercadoPagoConfig.AccessToken = builder.Configuration["MercadoPago:AccessToken"];
@@ -39,6 +40,14 @@ builder.Services.AddScoped<ITurmaService, TurmaService>();
 builder.Services.AddScoped<ITurmaRepository, TurmaRepository>();
 builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<CloudinaryService>();
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = 10485760; // 10MB
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
 // 3. Configuração da autenticação JWT
 var jwtKey = builder.Configuration["JwtSettings:Key"];
 if (string.IsNullOrEmpty(jwtKey))

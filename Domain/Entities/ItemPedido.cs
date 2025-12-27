@@ -1,6 +1,7 @@
 ﻿// Models/ItemPedido.cs
 using ClubeMecanico_API.Domain.Entities;
 using ClubeMecanico_API.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class ItemPedido
 {
@@ -12,12 +13,17 @@ public class ItemPedido
     public DateTime DataCompra { get; set; } = DateTime.UtcNow;
     public int Quantidade { get; set; } = 1;
     public string? NomeCurso { get; set; }
-    public int? Duracao { get; set; }
+    public string? Duracao { get; set; }
 
-    // Navegações
-    public Pedido Pedido { get; set; }
-    public Curso Curso { get; set; }
-    public Turma? Turma { get; set; }
+    [ForeignKey("PedidoId")]
+    public virtual Pedido? Pedido { get; set; }
+
+    [ForeignKey("CursoId")]
+    public virtual Curso? Curso { get; set; }
+
+    [ForeignKey("TurmaId")]
+    public virtual Turma? Turma { get; set; }
+
 }
 
 // Models/CriarPedidoRequest.cs

@@ -31,7 +31,7 @@ namespace ClubeMecanico_API.Infrastructure.Data
             modelBuilder.Entity<Turma>().ToTable("turmas");
             modelBuilder.Entity<CursoAluno>().ToTable("cursosalunos");
             modelBuilder.Entity<Certificado>().ToTable("certificados");
-            modelBuilder.Entity<ConteudoComplementar>().ToTable("conteudoscomplementares");
+            modelBuilder.Entity<ConteudoComplementar>().ToTable("conteudos_complementares");
             modelBuilder.Entity<CarrinhoTemporario>().ToTable("carrinho_temporario");
             modelBuilder.Entity<ItemPedido>().ToTable("itens_pedido");
             foreach (var entityType in modelBuilder.Model.GetEntityTypes())
@@ -464,11 +464,6 @@ namespace ClubeMecanico_API.Infrastructure.Data
                     .HasForeignKey(t => t.CursoId)
                     .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(c => c.ConteudosComplementares)
-                    .WithOne(cc => cc.Curso)
-                    .HasForeignKey(cc => cc.CursoId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
                 entity.HasMany(c => c.CursosAlunos)
                     .WithOne(ca => ca.Curso)
                     .HasForeignKey(ca => ca.CursoId)
@@ -574,18 +569,12 @@ namespace ClubeMecanico_API.Infrastructure.Data
             {
                 entity.HasKey(e => e.Id); // CHAVE PRIMÁRIA OBRIGATÓRIA
 
-                entity.Property(e => e.CursoId).IsRequired();
+                entity.Property(e => e.CursoId).IsRequired().HasColumnName("curso_id");
                 entity.Property(e => e.Titulo).IsRequired().HasMaxLength(200);
                 entity.Property(e => e.Tipo).IsRequired().HasConversion<string>();
                 entity.Property(e => e.Url).IsRequired().HasMaxLength(500);
                 entity.Property(e => e.Descricao).HasMaxLength(1000);
-                entity.Property(e => e.DataCriacao).IsRequired();
-
-                // Relacionamento com Curso
-                entity.HasOne(cc => cc.Curso)
-                      .WithMany() // Se Curso não tiver navegação para ConteudoComplementar
-                      .HasForeignKey(cc => cc.CursoId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.DataCriacao).IsRequired().HasColumnName("data_criacao");
 
                 // Índice para consultas por curso
                 entity.HasIndex(e => e.CursoId);

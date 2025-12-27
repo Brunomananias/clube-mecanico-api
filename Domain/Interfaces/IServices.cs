@@ -1,4 +1,5 @@
 ﻿using ClubeMecanico_API.API.DTOs;
+using ClubeMecanico_API.API.DTOs.Requests;
 using ClubeMecanico_API.Domain.Entities;
 using ClubeMecanico_API.Domain.Enums;
 
@@ -37,6 +38,7 @@ namespace ClubeMecanico.Application.Interfaces
         Task<Curso?> GetCursoByIdAsync(int id);
         Task<Curso> CriarCursoAsync(CriarCursoDTO cursoDto, int adminId);
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
+        Task<CursoAluno> MatricularAlunoAsync(MatricularAlunoCursoDTO matriculaDto, int usuarioId);
     }
 
     public class ResultadoPagamento
