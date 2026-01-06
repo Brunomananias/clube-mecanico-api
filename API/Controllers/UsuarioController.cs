@@ -11,7 +11,6 @@ namespace YourProject.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize]
     public class UsuariosController : ControllerBase
     {
         private readonly IUsuarioService _usuarioService;
@@ -23,7 +22,6 @@ namespace YourProject.Controllers
 
         // GET: api/usuarios
         [HttpGet]
-        [Authorize]
         public async Task<ActionResult<IEnumerable<UsuarioResponse>>> GetUsuarios()
         {
             try

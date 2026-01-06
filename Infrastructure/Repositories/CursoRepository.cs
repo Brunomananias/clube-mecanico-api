@@ -35,6 +35,12 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
             await _context.SaveChangesAsync();
         }
 
+        public async Task AdicionarMatricula(CursoAluno curso)
+        {
+            await _context.CursosAlunos.AddAsync(curso);
+            await _context.SaveChangesAsync();
+        }
+
         public async Task UpdateAsync(Curso curso)
         {
             _context.Cursos.Update(curso);
@@ -65,8 +71,39 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
         public async Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId)
         {
             return await _context.Turmas
-                .Where(t => t.CursoId == cursoId && t.Status == "ABERTO")
+                .Where(t => t.CursoId == cursoId && t.Status == "ATIVA")
                 .OrderBy(t => t.DataInicio)
+                .ToListAsync();
+        }
+
+        public async Task<IEnumerable<CursoAluno>> GetCursosComTurmasPorAluno(int alunoId)
+        {
+            return await _context.CursosAlunos
+                .Where(ca => ca.AlunoId == alunoId)
+                .Include(ca => ca.Curso)  // Inclui o curso
+                .Include(ca => ca.Turma)  // Inclui a turma
+                .Select(ca => new CursoAluno
+                {
+                    Id = ca.Id,
+                    AlunoId = ca.AlunoId,
+                    Curso = new Curso
+                    {
+                        Id = ca.Curso.Id,
+                        Nome = ca.Curso.Nome,
+                        Descricao = ca.Curso.Descricao,
+                        DuracaoHoras = ca.Curso.DuracaoHoras,
+                        Valor = ca.Curso.Valor
+                    },
+                    Turma = new Turma
+                    {
+                        Id = ca.Turma.Id,
+                        DataInicio = ca.Turma.DataInicio,
+                        DataFim = ca.Turma.DataFim,                        
+                    },
+                    Status = ca.Status,
+                    Progresso = ca.Progresso,
+                    DataMatricula = ca.DataMatricula,
+                })
                 .ToListAsync();
         }
     }

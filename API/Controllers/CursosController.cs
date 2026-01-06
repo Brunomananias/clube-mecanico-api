@@ -3,6 +3,7 @@ using ClubeMecanico.Application.Interfaces;
 using ClubeMecanico_API.API.DTOs;
 using ClubeMecanico_API.API.DTOs.Requests;
 using ClubeMecanico_API.Domain.Entities;
+using ClubeMecanico_API.Domain.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -26,6 +27,24 @@ namespace ClubeMecanico_API.API.Controllers
             try
             {
                 var cursos = await _cursoService.GetAllCursosAsync();
+                return Ok(cursos);
+            }
+            catch (ApplicationException ex)
+            {
+                return StatusCode(500, new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "Erro interno no servidor" });
+            }
+        }
+
+        [HttpGet("buscarCursosAlunos")]
+        public async Task<IActionResult> BuscarCursosAlunos(int idAluno)
+        {
+            try
+            {
+                var cursos = await _cursoService.BuscarCursosAlunos(idAluno);
                 return Ok(cursos);
             }
             catch (ApplicationException ex)
@@ -64,7 +83,6 @@ namespace ClubeMecanico_API.API.Controllers
         }
 
         [HttpPost]
-        [Authorize] // Apenas usuários autenticados
         public async Task<IActionResult> Create([FromBody] CriarCursoDTO cursoDto)
         {
             try
@@ -135,7 +153,6 @@ namespace ClubeMecanico_API.API.Controllers
 
         // API/Controllers/CursosController.cs - Adicione este método
         [HttpPost("matricular-aluno")]
-        [Authorize]
         public async Task<IActionResult> MatricularAluno([FromBody] MatricularAlunoCursoDTO matriculaDto)
         {
             try

@@ -1,0 +1,7 @@
+# appsettings.json pessoais/com senhas
+appsettings.Development.json
+appsettings.json
+
+# Em vez disso, suba um template
+appsettings.example.json
+appsettings.template.json

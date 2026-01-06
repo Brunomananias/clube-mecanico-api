@@ -39,6 +39,7 @@ namespace ClubeMecanico.Application.Interfaces
         Task<Curso> CriarCursoAsync(CriarCursoDTO cursoDto, int adminId);
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
         Task<CursoAluno> MatricularAlunoAsync(MatricularAlunoCursoDTO matriculaDto, int usuarioId);
+        Task<IEnumerable<CursoAluno>> BuscarCursosAlunos(int idAluno);
     }
 
     public class ResultadoPagamento

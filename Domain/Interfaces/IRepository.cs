@@ -8,6 +8,7 @@ namespace ClubeMecanico.Domain.Interfaces
         Task<T?> GetByIdAsync(int id);
         Task<IEnumerable<T>> GetAllAsync();
         Task AddAsync(T entity);
+        Task AdicionarMatricula(CursoAluno cursoAluno);
         Task UpdateAsync(T entity);
         Task DeleteAsync(T entity);
     }
@@ -20,6 +21,7 @@ namespace ClubeMecanico.Domain.Interfaces
         Task<bool> CodigoExistsAsync(string codigo);
         Task<IEnumerable<Curso>> GetCursosDestaqueAsync();
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
+        Task<IEnumerable<CursoAluno>> GetCursosComTurmasPorAluno(int idAluno);
     }
 
     public interface ICursoAlunoRepository : IRepository<CursoAluno>

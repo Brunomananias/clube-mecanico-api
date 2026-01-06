@@ -9,7 +9,6 @@ namespace ClubeMecanico_API.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    [Authorize]
     public class TurmasController : ControllerBase
     {
         private readonly ITurmaService _turmaService;
@@ -21,7 +20,6 @@ namespace ClubeMecanico_API.API.Controllers
 
         // POST: api/turmas
         [HttpPost]
-        [Authorize]
         public async Task<ActionResult<ApiResponse>> CriarTurma([FromBody] CriarTurmaRequest turmaDto)
         {
             try

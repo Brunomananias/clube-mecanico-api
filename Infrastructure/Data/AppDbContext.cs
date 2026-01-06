@@ -29,7 +29,7 @@ namespace ClubeMecanico_API.Infrastructure.Data
             modelBuilder.Entity<Usuario>().ToTable("usuarios");
             modelBuilder.Entity<Curso>().ToTable("cursos");
             modelBuilder.Entity<Turma>().ToTable("turmas");
-            modelBuilder.Entity<CursoAluno>().ToTable("cursosalunos");
+            modelBuilder.Entity<CursoAluno>().ToTable("cursos_alunos");
             modelBuilder.Entity<Certificado>().ToTable("certificados");
             modelBuilder.Entity<ConteudoComplementar>().ToTable("conteudos_complementares");
             modelBuilder.Entity<CarrinhoTemporario>().ToTable("carrinho_temporario");
@@ -508,9 +508,11 @@ namespace ClubeMecanico_API.Infrastructure.Data
             modelBuilder.Entity<CursoAluno>(entity =>
             {
                 entity.HasKey(e => e.Id);
-                entity.Property(e => e.AlunoId).IsRequired();
-                entity.Property(e => e.CursoId).IsRequired();
-                entity.Property(e => e.DataMatricula).IsRequired();
+                entity.Property(e => e.AlunoId).IsRequired().HasColumnName("aluno_id");
+                entity.Property(e => e.CursoId).IsRequired().HasColumnName("curso_id");
+                entity.Property(e => e.TurmaId).IsRequired().HasColumnName("turma_id");
+                entity.Property(e => e.DataConclusao).IsRequired().HasColumnName("data_conclusao");
+                entity.Property(e => e.DataMatricula).IsRequired().HasColumnName("data_matricula");
                 entity.Property(e => e.Status).IsRequired().HasConversion<string>();
 
                 // Relacionamento com Usuario (Aluno)

@@ -4,12 +4,15 @@ using ClubeMecanico_API.API.DTOs;
 using ClubeMecanico.Domain.Interfaces;
 using ClubeMecanico_API.Domain.Entities;
 using ClubeMecanico_API.API.DTOs.Requests;
+using ClubeMecanico_API.Domain.Interfaces;
 
 namespace ClubeMecanico.Application.Services
 {
     public class CursoService : ICursoService
     {
         private readonly ICursoRepository _cursoRepository;
+        private readonly ITurmaRepository _turmaRepository;
+        private readonly IUsuarioRepository _usuarioRepository;
 
         public CursoService(ICursoRepository cursoRepository)
         {
@@ -142,32 +145,27 @@ namespace ClubeMecanico.Application.Services
                 if (curso == null)
                     throw new InvalidOperationException($"Curso com ID {matriculaDto.CursoId} não encontrado");
 
-                // Verificar se a turma existe e pertence ao curso
-                var turma = await _turmaRepository.GetByIdAsync(matriculaDto.TurmaId);
-                if (turma == null || turma.CursoId != matriculaDto.CursoId)
-                    throw new InvalidOperationException("Turma não encontrada ou não pertence ao curso");
+                //// Verificar se o aluno existe
+                //var aluno = await _alunoRepository.GetByIdAsync(matriculaDto.AlunoId);
+                //if (aluno == null)
+                //    throw new InvalidOperationException($"Aluno com ID {matriculaDto.AlunoId} não encontrado");
 
-                // Verificar se o aluno existe
-                var aluno = await _alunoRepository.GetByIdAsync(matriculaDto.AlunoId);
-                if (aluno == null)
-                    throw new InvalidOperationException($"Aluno com ID {matriculaDto.AlunoId} não encontrado");
+                //// Verificar se o aluno já está matriculado nesta turma
+                //var matriculaExistente = await _cursoAlunoRepository
+                //    .GetMatriculaPorAlunoETurmaAsync(matriculaDto.AlunoId, matriculaDto.TurmaId);
 
-                // Verificar se o aluno já está matriculado nesta turma
-                var matriculaExistente = await _cursoAlunoRepository
-                    .GetMatriculaPorAlunoETurmaAsync(matriculaDto.AlunoId, matriculaDto.TurmaId);
+                //if (matriculaExistente != null)
+                //    throw new InvalidOperationException("Aluno já está matriculado nesta turma");
 
-                if (matriculaExistente != null)
-                    throw new InvalidOperationException("Aluno já está matriculado nesta turma");
+                //// Verificar se há vagas disponíveis na turma (se aplicável)
+                //if (turma.VagasLimite > 0)
+                //{
+                //    var totalMatriculas = await _cursoAlunoRepository
+                //        .CountMatriculasPorTurmaAsync(matriculaDto.TurmaId);
 
-                // Verificar se há vagas disponíveis na turma (se aplicável)
-                if (turma.VagasLimite > 0)
-                {
-                    var totalMatriculas = await _cursoAlunoRepository
-                        .CountMatriculasPorTurmaAsync(matriculaDto.TurmaId);
-
-                    if (totalMatriculas >= turma.VagasLimite)
-                        throw new InvalidOperationException("Não há vagas disponíveis nesta turma");
-                }
+                //    if (totalMatriculas >= turma.VagasLimite)
+                //        throw new InvalidOperationException("Não há vagas disponíveis nesta turma");
+                //}
 
                 // Criar objeto de matrícula
                 var cursoAluno = new CursoAluno
@@ -177,13 +175,11 @@ namespace ClubeMecanico.Application.Services
                     TurmaId = matriculaDto.TurmaId,
                     Status = matriculaDto.Status ?? "Ativo",
                     DataMatricula = DateTime.UtcNow,
-                    DataCriacao = DateTime.UtcNow,
-                    CriadoPor = usuarioId
                 };
 
-                // Salvar no banco de dados
-                await _cursoAlunoRepository.AddAsync(cursoAluno);
-                await _unitOfWork.CommitAsync();
+                //// Salvar no banco de dados
+                await _cursoRepository.AdicionarMatricula(cursoAluno);
+                //await _unitOfWork.CommitAsync();
 
                 // Retornar matrícula criada
                 return cursoAluno;
@@ -194,6 +190,12 @@ namespace ClubeMecanico.Application.Services
                 Console.WriteLine($"Erro ao matricular aluno: {ex.Message}");
                 throw;
             }
+        }
+
+        public async Task<IEnumerable<CursoAluno>> BuscarCursosAlunos(int idAluno)
+        {
+            var cursos = await _cursoRepository.GetCursosComTurmasPorAluno(idAluno);
+            return cursos;
         }
     }
 }
