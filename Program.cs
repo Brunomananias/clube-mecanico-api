@@ -43,7 +43,7 @@ Console.WriteLine("?? Carregando variáveis de ambiente...");
 
 // 1. Banco de dados
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-var connectionStringFromEnv = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
+var connectionStringFromEnv = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnections");
 
 // 2. JWT Settings
 var jwtKey = Environment.GetEnvironmentVariable("JwtSettings__Key") ??
