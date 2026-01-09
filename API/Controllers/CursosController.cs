@@ -90,11 +90,6 @@ namespace ClubeMecanico_API.API.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                // Obter ID do usuário autenticado
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int adminId))
-                    return Unauthorized(new { message = "Usuário não autenticado" });
-
                 var curso = await _cursoService.CriarCursoAsync(cursoDto, adminId);
 
                 return CreatedAtAction(nameof(GetById), new { id = curso.Id }, curso);
