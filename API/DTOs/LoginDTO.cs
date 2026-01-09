@@ -34,6 +34,7 @@ namespace ClubeMecanico_API.API.DTOs
 
     public class CriarCursoDTO
     {
+        public int IdUsuario { get; set; }
         [Required(ErrorMessage = "Código é obrigatório")]
         [StringLength(20, MinimumLength = 3, ErrorMessage = "Código deve ter entre 3 e 20 caracteres")]
         public string Codigo { get; set; }
