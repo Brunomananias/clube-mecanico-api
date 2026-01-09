@@ -48,7 +48,6 @@ namespace ClubeMecanico_API.API.DTOs
         [StringLength(2000, ErrorMessage = "Descrição detalhada não pode exceder 2000 caracteres")]
         public string? DescricaoDetalhada { get; set; }
 
-        [Url(ErrorMessage = "URL da foto inválida")]
         public string? FotoUrl { get; set; }
 
         [Range(0, 999999.99, ErrorMessage = "Valor deve ser entre 0 e 999999.99")]
