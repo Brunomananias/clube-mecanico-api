@@ -48,7 +48,7 @@ namespace ClubeMecanico.Application.Services
             }
         }
 
-        public async Task<Curso> CriarCursoAsync(CriarCursoDTO cursoDto, int adminId)
+        public async Task<Curso> CriarCursoAsync(CriarCursoDTO cursoDto)
         {
             try
             {
@@ -87,7 +87,7 @@ namespace ClubeMecanico.Application.Services
                     CertificadoDisponivel = cursoDto.CertificadoDisponivel,
                     Ativo = true,
                     DataCriacao = DateTime.UtcNow,
-                    AdminCriador = adminId
+                    AdminCriador = cursoDto.IdUsuario
                 };
 
                 // Inicializar collections para evitar null reference

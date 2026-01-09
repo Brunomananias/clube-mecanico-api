@@ -90,7 +90,7 @@ namespace ClubeMecanico_API.API.Controllers
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
 
-                var curso = await _cursoService.CriarCursoAsync(cursoDto, adminId);
+                var curso = await _cursoService.CriarCursoAsync(cursoDto);
 
                 return CreatedAtAction(nameof(GetById), new { id = curso.Id }, curso);
             }
