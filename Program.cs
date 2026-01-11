@@ -623,7 +623,7 @@ void ConfigureCors(IServiceCollection services, bool isDevelopment)
             {
                 policy.WithOrigins(
                         "https://www.clubemecanico.com.br/", "https://www.clubemecanico.com.br/",
-                        "https://localhost:5173"
+                        "https://localhost:5173", "https://clube-mecanico-api.onrender.com/"
                     )
                     .AllowAnyMethod()
                     .AllowAnyHeader()
