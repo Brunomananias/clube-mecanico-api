@@ -212,33 +212,68 @@ namespace ClubeMecanico_API.API.Controllers
             }
         }
 
-        // Comente os outros métodos por enquanto
-        /*
         [HttpPut("{id}")]
-        [Authorize(Roles = "1")]
-        public async Task<IActionResult> Update(int id, [FromBody] AtualizarCursoDTO cursoDto)
+        public async Task<IActionResult> AtualizarCurso(int id, [FromBody] AtualizarCursoDTO cursoDto)
         {
-            // Implementar depois
+            try
+            {
+                // Chamar o service
+                var cursoAtualizado = await _cursoService.AtualizarCursoAsync(id, cursoDto);
+
+                // Retornar resposta
+                return Ok(new
+                {
+                    success = true,
+                    message = "Curso atualizado com sucesso",
+                    data = new
+                    {
+                        cursoAtualizado.Id,
+                        cursoAtualizado.Nome,
+                        cursoAtualizado.Descricao,
+                        cursoAtualizado.Valor,
+                        cursoAtualizado.DuracaoHoras,
+                        cursoAtualizado.Nivel,
+                        cursoAtualizado.MaxAlunos,
+                        cursoAtualizado.CertificadoDisponivel
+                    }
+                });
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(new
+                {
+                    success = false,
+                    message = ex.Message
+                });
+            }
+            catch (Exception ex)
+            {
+                // Log de erro (você pode usar ILogger aqui)
+                Console.WriteLine($"Erro ao atualizar curso: {ex.Message}");
+
+                return StatusCode(500, new
+                {
+                    success = false,
+                    message = "Erro interno ao atualizar curso"
+                });
+            }
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = "Administrador")]
-        public async Task<IActionResult> Delete(int id)
+        public async Task<IActionResult> DeletarCurso(int id)
         {
-            // Implementar depois
+            await _cursoService.DeletarCurso(id);
+            return Ok();
         }
+       
 
-        [HttpGet("{id}/turmas")]
-        public async Task<IActionResult> GetTurmas(int id)
-        {
-            // Implementar depois
-        }
-
-        [HttpGet("{id}/conteudos")]
-        public async Task<IActionResult> GetConteudos(int id)
-        {
-            // Implementar depois
-        }
-        */
     }
 }

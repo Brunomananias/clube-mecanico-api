@@ -197,5 +197,90 @@ namespace ClubeMecanico.Application.Services
             var cursos = await _cursoRepository.GetCursosComTurmasPorAluno(idAluno);
             return cursos;
         }
+
+        // Application/Services/CursoService.cs - Adicione este método
+        public async Task<Curso> AtualizarCursoAsync(int id, AtualizarCursoDTO cursoDto)
+        {
+            try
+            {
+                // 1. Validações básicas
+                if (id <= 0)
+                    throw new ArgumentException("ID do curso inválido");
+
+                if (string.IsNullOrWhiteSpace(cursoDto.Nome))
+                    throw new ArgumentException("Nome do curso é obrigatório");
+
+                if (cursoDto.Valor < 0)
+                    throw new ArgumentException("Valor do curso não pode ser negativo");
+
+                if (cursoDto.DuracaoHoras <= 0)
+                    throw new ArgumentException("Duração do curso deve ser maior que zero");
+
+                if (cursoDto.MaxAlunos <= 0)
+                    throw new ArgumentException("Número máximo de alunos deve ser maior que zero");
+
+                // 2. Buscar curso existente
+                var cursoExistente = await _cursoRepository.GetByIdAsync(id);
+                if (cursoExistente == null)
+                    throw new KeyNotFoundException($"Curso com ID {id} não encontrado");
+
+                // 3. Atualizar propriedades do curso
+                cursoExistente.Atualizar(
+                    cursoDto.Codigo,
+                    cursoDto.Nome.Trim(),
+                    cursoDto.Descricao?.Trim(),
+                    cursoDto.Valor,
+                    cursoDto.DuracaoHoras,
+                    cursoDto.Nivel?.Trim(),
+                    cursoDto.MaxAlunos,
+                    cursoDto.FotoUrl
+                );
+
+                // 4. Atualizar propriedades adicionais
+                if (!string.IsNullOrEmpty(cursoDto.ConteudoProgramatico))
+                {
+                    cursoExistente.AtualizarConteudoProgramatico(cursoDto.ConteudoProgramatico.Trim());
+                }
+
+                if (!string.IsNullOrEmpty(cursoDto.FotoUrl))
+                {
+                    cursoExistente.AtualizarFoto(cursoDto.FotoUrl.Trim());
+                }
+
+                cursoExistente.AtualizarCertificadoDisponivel(cursoDto.CertificadoDisponivel);
+
+                // 5. Chamar repositório para salvar
+                await _cursoRepository.UpdateAsync(cursoExistente);
+
+                return cursoExistente;
+            }
+            catch (KeyNotFoundException)
+            {
+                throw; // Relançar exceção de não encontrado
+            }
+            catch (ArgumentException ex)
+            {
+                throw; // Relançar validações de argumento
+            }
+            catch (Exception ex)
+            {
+                // Log de erro
+                throw new ApplicationException($"Erro ao atualizar curso com ID {id}", ex);
+            }
+        }
+
+        public async Task<bool> DeletarCurso(int id)
+        {
+            try
+            {
+                var curso = await GetCursoByIdAsync(id);
+                var deleted = await _cursoRepository.DeletarCurso(id);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Erro ao deletar curso");
+            }
+        }
     }
 }

@@ -41,14 +41,16 @@ namespace ClubeMecanico_API.Domain.Entities
             Validar();
         }
 
-        public void Atualizar(string nome, string descricao, decimal valor, int duracaoHoras, string? nivel, int maxAlunos)
+        public void Atualizar(string codigo, string nome, string descricao, decimal valor, int duracaoHoras, string? nivel, int maxAlunos, string fotoUrl)
         {
+            Codigo = codigo;
             Nome = nome;
             Descricao = descricao;
             Valor = valor;
             DuracaoHoras = duracaoHoras;
             Nivel = nivel;
             MaxAlunos = maxAlunos;
+            FotoUrl = fotoUrl;
             Validar();
         }
 

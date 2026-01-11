@@ -78,6 +78,11 @@ namespace ClubeMecanico_API.API.DTOs
         public int DuracaoHoras { get; set; }
         public string? Nivel { get; set; }
         public int MaxAlunos { get; set; }
+        public string? ConteudoProgramatico { get; set; }
+        public string? FotoUrl { get; set; }
+        public bool CertificadoDisponivel { get; set; } = true;
+        public bool Ativo { get; set; } = true;
+
     }
 
     public class CriarPedidoDTO

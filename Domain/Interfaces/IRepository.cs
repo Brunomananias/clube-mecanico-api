@@ -22,6 +22,7 @@ namespace ClubeMecanico.Domain.Interfaces
         Task<IEnumerable<Curso>> GetCursosDestaqueAsync();
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
         Task<IEnumerable<CursoAluno>> GetCursosComTurmasPorAluno(int idAluno);
+        Task<bool> DeletarCurso(int id);
     }
 
     public interface ICursoAlunoRepository : IRepository<CursoAluno>

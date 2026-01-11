@@ -43,6 +43,12 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
 
         public async Task UpdateAsync(Curso curso)
         {
+            var existe = await _context.Cursos.AnyAsync(c => c.Id == curso.Id);
+            if (!existe)
+            {
+                throw new KeyNotFoundException($"Curso com ID {curso.Id} não encontrado");
+            }
+
             _context.Cursos.Update(curso);
             await _context.SaveChangesAsync();
         }
@@ -105,6 +111,17 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
                     DataMatricula = ca.DataMatricula,
                 })
                 .ToListAsync();
+        }
+
+        public async Task<bool> DeletarCurso(int id)
+        {
+            var curso = await _context.Cursos.FindAsync(id);
+            if (curso == null)
+                return false;
+
+            _context.Cursos.Remove(curso);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }
