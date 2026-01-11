@@ -312,9 +312,14 @@ app.Run();
 
 string GetConnectionString(IConfiguration configuration, bool isRender)
 {
+    // Primeiro, tenta pegar da configuração padrão
+    var connectionString = configuration.GetConnectionString("DefaultConnection");
+
     if (isRender)
     {
-        // Tenta obter do ConnectionStrings__DefaultConnection (formato do Render)
+        Console.WriteLine("? Executando no Render - Processando variáveis de ambiente...");
+
+        // Opção 1: Tenta obter diretamente da variável de ambiente
         var connectionStringFromEnv = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnection");
         if (!string.IsNullOrEmpty(connectionStringFromEnv))
         {
@@ -322,44 +327,103 @@ string GetConnectionString(IConfiguration configuration, bool isRender)
             return connectionStringFromEnv;
         }
 
-        // Tenta converter DATABASE_URL
+        // Opção 2: Tenta obter como variável separada
+        var dbHost = Environment.GetEnvironmentVariable("DB_HOST");
+        var dbPort = Environment.GetEnvironmentVariable("DB_PORT");
+        var dbName = Environment.GetEnvironmentVariable("DB_NAME");
+        var dbUser = Environment.GetEnvironmentVariable("DB_USER");
+        var dbPassword = Environment.GetEnvironmentVariable("DB_PASSWORD");
+
+        if (!string.IsNullOrEmpty(dbHost))
+        {
+            Console.WriteLine("? Usando variáveis de ambiente separadas para conexão");
+            return $"Host={dbHost};" +
+                   $"Port={dbPort ?? "5432"};" +
+                   $"Database={dbName};" +
+                   $"Username={dbUser};" +
+                   $"Password={dbPassword};" +
+                   $"SSL Mode=Require;" +
+                   $"Trust Server Certificate=true;" +
+                   $"Pooling=true;" +
+                   $"Timeout=30;";
+        }
+
+        // Opção 3: Tenta converter DATABASE_URL (formato PostgreSQL)
         var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
         if (!string.IsNullOrEmpty(databaseUrl))
         {
             try
             {
-                var uri = new Uri(databaseUrl);
-                var userInfo = uri.UserInfo.Split(':');
+                Console.WriteLine($"? DATABASE_URL encontrada: {databaseUrl.Substring(0, Math.Min(databaseUrl.Length, 50))}...");
 
-                var host = uri.Host;
-                var port = uri.Port;
-                var database = uri.AbsolutePath.Trim('/');
-                var user = userInfo[0];
-                var password = userInfo.Length > 1 ? userInfo[1] : "";
+                // Remove o protocolo postgres:// se existir
+                string connectionStringFromUrl;
 
-                var connString = $"Host={host};" +
-                                $"Port={port};" +
-                                $"Database={database};" +
-                                $"Username={user};" +
-                                $"Password={password};" +
-                                $"SSL Mode=Require;" +
-                                $"Trust Server Certificate=true;" +
-                                $"Pooling=true;" +
-                                $"Timeout=30;";
+                if (databaseUrl.StartsWith("postgres://"))
+                {
+                    // Formato: postgres://username:password@host:port/database
+                    var uriString = databaseUrl.Replace("postgres://", "postgresql://");
+                    var uri = new Uri(uriString);
 
-                Console.WriteLine($"? Convertendo DATABASE_URL: Host={host}, Database={database}");
-                return connString;
+                    var userInfo = uri.UserInfo.Split(':');
+                    var username = userInfo[0];
+                    var password = userInfo.Length > 1 ? userInfo[1] : "";
+
+                    connectionStringFromUrl = $"Host={uri.Host};" +
+                                            $"Port={uri.Port};" +
+                                            $"Database={uri.AbsolutePath.Trim('/')};" +
+                                            $"Username={username};" +
+                                            $"Password={password};" +
+                                            $"SSL Mode=Require;" +
+                                            $"Trust Server Certificate=true;" +
+                                            $"Pooling=true;" +
+                                            $"Timeout=30;";
+                }
+                else if (databaseUrl.StartsWith("postgresql://"))
+                {
+                    // Já está no formato correto
+                    var uri = new Uri(databaseUrl);
+
+                    var userInfo = uri.UserInfo.Split(':');
+                    var username = userInfo[0];
+                    var password = userInfo.Length > 1 ? userInfo[1] : "";
+
+                    connectionStringFromUrl = $"Host={uri.Host};" +
+                                            $"Port={uri.Port};" +
+                                            $"Database={uri.AbsolutePath.Trim('/')};" +
+                                            $"Username={username};" +
+                                            $"Password={password};" +
+                                            $"SSL Mode=Require;" +
+                                            $"Trust Server Certificate=true;" +
+                                            $"Pooling=true;" +
+                                            $"Timeout=30;";
+                }
+                else
+                {
+                    // Tenta como string de conexão direta
+                    Console.WriteLine("? Usando DATABASE_URL como string de conexão direta");
+                    connectionStringFromUrl = databaseUrl;
+                }
+
+                Console.WriteLine("? Conexão do banco gerada com sucesso a partir do DATABASE_URL");
+                return connectionStringFromUrl;
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"? Erro ao converter DATABASE_URL: {ex.Message}");
-                throw;
+                Console.WriteLine($"? ERRO ao processar DATABASE_URL: {ex.Message}");
+                Console.WriteLine($"? StackTrace: {ex.StackTrace}");
+
+                // Log detalhado para debugging
+                Console.WriteLine($"? DATABASE_URL value: {databaseUrl}");
+
+                // Não throw - vamos tentar usar a connection string padrão
             }
         }
+
+        Console.WriteLine("? Nenhuma configuração específica do Render encontrada. Usando configuração padrão.");
     }
 
-    // Fallback para configuração normal
-    return configuration.GetConnectionString("DefaultConnection");
+    return connectionString;
 }
 
 JwtSettings GetJwtSettings(IConfiguration configuration)
