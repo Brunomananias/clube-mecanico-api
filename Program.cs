@@ -68,7 +68,7 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 // Em seguida, configure seu DbContext normalmente
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(connectionString));
 
 // 2. Session
 builder.Services.AddDistributedMemoryCache();
@@ -611,24 +611,11 @@ void ConfigureCors(IServiceCollection services, bool isDevelopment)
 {
     services.AddCors(options =>
     {
-        options.AddPolicy("AllowSpecificOrigins", policy =>
+        options.AddPolicy("AllowAll", policy =>
         {
-            if (isDevelopment)
-            {
-                policy.AllowAnyOrigin()
-                      .AllowAnyMethod()
-                      .AllowAnyHeader();
-            }
-            else
-            {
-                policy.WithOrigins(
-                        "https://www.clubemecanico.com.br/", "https://www.clubemecanico.com.br/",
-                        "https://localhost:5173", "https://clube-mecanico-api.onrender.com/"
-                    )
-                    .AllowAnyMethod()
-                    .AllowAnyHeader()
-                    .AllowCredentials();
-            }
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
         });
     });
 }
