@@ -282,7 +282,6 @@ public class PagamentoController : ControllerBase
 
 
     [HttpPost("criar-pagamento")]
-    [Authorize]
     public async Task<IActionResult> CriarPagamento([FromBody] PagamentoRequest request)
     {
         try

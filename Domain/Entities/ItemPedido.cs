@@ -36,7 +36,7 @@ public class CriarPedidoRequest
 // Models/PagamentoRequest.cs
 public class PagamentoRequest
 {
-    public int PedidoId { get; set; }
+    public int? PedidoId { get; set; }
     public int UserId { get; set; }
     public string MetodoPagamento { get; set; } // "credit_card", "pix", "boleto"
     public string? EmailCliente { get; set; }
