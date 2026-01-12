@@ -142,7 +142,7 @@ if (jwtKey.Length < 32)
 }
 
 // ========== CONFIGURAÇÃO DOS SERVIÇOS ==========
-
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 // 1. Banco de dados
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(connectionString));
