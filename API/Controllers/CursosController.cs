@@ -230,6 +230,7 @@ namespace ClubeMecanico_API.API.Controllers
                         cursoAtualizado.Id,
                         cursoAtualizado.Nome,
                         cursoAtualizado.Descricao,
+                        cursoAtualizado.DescricaoDetalhada,
                         cursoAtualizado.Valor,
                         cursoAtualizado.DuracaoHoras,
                         cursoAtualizado.Nivel,

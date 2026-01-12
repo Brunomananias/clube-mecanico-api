@@ -418,6 +418,11 @@ namespace ClubeMecanico_API.Infrastructure.Data
                     .HasMaxLength(500)
                     .HasColumnName("descricao");
 
+                entity.Property(e => e.DescricaoDetalhada)
+                   .IsRequired(false)
+                   .HasMaxLength(500)
+                   .HasColumnName("descricao_detalhada");
+
                 entity.Property(e => e.FotoUrl)
                     .HasMaxLength(500)
                     .HasColumnName("foto_url");

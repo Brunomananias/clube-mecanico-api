@@ -9,6 +9,7 @@ namespace ClubeMecanico_API.Domain.Entities
         public string Codigo { get; set; }
         public string Nome { get;  set; }
         public string Descricao { get;  set; }
+        public string? DescricaoDetalhada { get; set; }
         public string? FotoUrl { get;  set; }
         public decimal Valor { get;  set; }
         public int DuracaoHoras { get;  set; }
@@ -41,11 +42,12 @@ namespace ClubeMecanico_API.Domain.Entities
             Validar();
         }
 
-        public void Atualizar(string codigo, string nome, string descricao, decimal valor, int duracaoHoras, string? nivel, int maxAlunos, string fotoUrl)
+        public void Atualizar(string codigo, string nome, string descricao, string descricaoDetalhada, decimal valor, int duracaoHoras, string? nivel, int maxAlunos, string fotoUrl)
         {
             Codigo = codigo;
             Nome = nome;
             Descricao = descricao;
+            DescricaoDetalhada = descricaoDetalhada;
             Valor = valor;
             DuracaoHoras = duracaoHoras;
             Nivel = nivel;

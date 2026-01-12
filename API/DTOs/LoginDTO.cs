@@ -74,6 +74,7 @@ namespace ClubeMecanico_API.API.DTOs
         public string Codigo { get; set; }
         public string Nome { get; set; }
         public string Descricao { get; set; }
+        public string? DescricaoDetalhada { get; set; }
         public decimal Valor { get; set; }
         public int DuracaoHoras { get; set; }
         public string? Nivel { get; set; }
