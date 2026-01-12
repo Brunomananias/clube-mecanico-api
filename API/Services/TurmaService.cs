@@ -23,9 +23,6 @@ namespace ClubeMecanico.Application.Services
             try
             {
                 // Validações
-                if (turmaDto.DataInicio >= turmaDto.DataFim)
-                    throw new ArgumentException("Data de início deve ser anterior à data de fim");
-
                 if (turmaDto.VagasTotal <= 0)
                     throw new ArgumentException("Total de vagas deve ser maior que zero");
 
