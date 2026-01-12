@@ -33,23 +33,8 @@ namespace ClubeMecanico_API.Controllers
         {
             try
             {
-                // 1. OBTER ALUNO LOGADO DO TOKEN JWT
-                var alunoIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (alunoIdClaim == null)
-                {
-                    return Unauthorized(new
-                    {
-                        success = false,
-                        message = "Usuário não autenticado. Faça login novamente."
-                    });
-                }
-
-                var alunoId = int.Parse(alunoIdClaim.Value);
-                _logger.LogInformation("Criando pedido para aluno ID: {AlunoId}", alunoId);
-
-                // 2. BUSCAR DADOS DO ALUNO
                 var aluno = await _context.Usuarios
-                    .FirstOrDefaultAsync(u => u.Id == alunoId);
+                    .FirstOrDefaultAsync(u => u.Id == request.usuarioId);
 
                 if (aluno == null)
                 {
@@ -63,7 +48,7 @@ namespace ClubeMecanico_API.Controllers
                 // 3. BUSCAR ITENS DO CARRINHO DO ALUNO
                 var carrinhoItens = await _context.CarrinhoTemporario
                     .Include(ct => ct.Curso)
-                    .Where(c => c.UsuarioId == alunoId)
+                    .Where(c => c.UsuarioId == request.usuarioId)
                     .ToListAsync();
 
                 if (!carrinhoItens.Any())
@@ -98,7 +83,7 @@ namespace ClubeMecanico_API.Controllers
                 var pedido = new Pedido
                 {
                     NumeroPedido = numeroPedido,
-                    AlunoId = alunoId,
+                    AlunoId = request.usuarioId,
                     Subtotal = subtotal,
                     Desconto = descontoCupom,
                     ValorTotal = total,
@@ -705,6 +690,7 @@ namespace ClubeMecanico_API.Controllers
 
     public class CriarPedidoRequest
     {
+        public int usuarioId { get; set; }
         public string? Cupom { get; set; }
     }
 }
