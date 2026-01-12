@@ -131,12 +131,10 @@ namespace ClubeMecanico_API.API.Controllers
         }
 
         [HttpGet("itens")]
-        public async Task<IActionResult> ObterItensCarrinho()
+        public async Task<IActionResult> ObterItensCarrinho(long usuarioId)
         {
             try
             {
-                var usuarioId = GetUserId();
-
                 var itens = await _context.CarrinhoTemporario
                     .Where(ct => ct.UsuarioId == usuarioId)
                     .Include(ct => ct.Curso)
