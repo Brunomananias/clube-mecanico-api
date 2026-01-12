@@ -52,9 +52,7 @@ namespace ClubeMecanico_API.API.Controllers
         public async Task<IActionResult> AdicionarAoCarrinho([FromBody] AdicionarCarrinhoRequest request)
         {
             try
-            {
-                var usuarioId = GetUserId();
-
+            {               
                 var curso = await _context.Cursos
                     .FirstOrDefaultAsync(c => c.Id == request.CursoId);
 
@@ -70,7 +68,7 @@ namespace ClubeMecanico_API.API.Controllers
                 // 3. Verificar se já está no carrinho
                 var itemExistente = await _context.CarrinhoTemporario
                .FirstOrDefaultAsync(ct =>
-                   ct.UsuarioId == usuarioId &&
+                   ct.UsuarioId == request.UsuarioId &&
                    ct.CursoId == request.CursoId &&
                    ct.TurmaId == request.TurmaId);
 
@@ -87,7 +85,7 @@ namespace ClubeMecanico_API.API.Controllers
                 // 4. Adicionar novo item ao carrinho
                 var novoItem = new CarrinhoTemporario
                 {
-                    UsuarioId = usuarioId,
+                    UsuarioId = request.UsuarioId,
                     CursoId = request.CursoId,
                     TurmaId = request.TurmaId,
                     DataAdicao = DateTime.SpecifyKind(DateTime.Now, DateTimeKind.Unspecified)
