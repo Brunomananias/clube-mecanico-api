@@ -13,8 +13,7 @@ using System.Text;
 namespace ClubeMecanico_API.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
-    [Authorize]
+    [Route("api/[controller]")]    
     public class PixController : ControllerBase
     {
         private readonly AppDbContext _context;
