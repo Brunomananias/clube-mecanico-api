@@ -287,18 +287,9 @@ public class PagamentoController : ControllerBase
     {
         try
         {
-            // 1. OBTER ALUNO LOGADO
-            var alunoIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-            if (alunoIdClaim == null)
-            {
-                return Unauthorized(new { success = false, message = "Usuário não autenticado" });
-            }
-            var alunoId = alunoIdClaim.Value;
-
-            // 2. BUSCAR ITENS DO CARRINHO
             var carrinhoItens = await _context.CarrinhoTemporario
                 .Include(ct => ct.Curso)
-                .Where(c => c.UsuarioId.ToString() == alunoId)
+                .Where(c => c.UsuarioId == request.UserId)
                 .ToListAsync();
 
             if (!carrinhoItens.Any())
@@ -316,7 +307,7 @@ public class PagamentoController : ControllerBase
             var pedido = new Pedido
             {
                 NumeroPedido = numeroPedido,
-                AlunoId = Convert.ToInt16(alunoId),
+                AlunoId = Convert.ToInt16(request.UserId),
                 Subtotal = subtotal,
                 Status = "pendente",
                 DataPedido = DateTime.Now,
