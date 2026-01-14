@@ -141,6 +141,34 @@ namespace ClubeMecanico_API.API.Controllers
             }
         }
 
+        [HttpGet]
+        public async Task<IActionResult> BuscarTurmas()
+        {
+            try
+            {
+                var turmas = await _turmaService.BuscarTurmas();
+
+                if (turmas == null || !turmas.Any())
+                {
+                    return NotFound(new ApiResponse
+                    {
+                        Success = false,
+                        Mensagem = "Nenhuma turma encontrada"
+                    });
+                }
+
+                return Ok(turmas); // ← Adicione Ok() aqui
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = "Erro ao buscar turmas"
+                });
+            }
+        }
+
         // POST: api/turmas/{turmaId}/verificar-vagas
         [HttpPost("{turmaId}/verificar-vagas")]
         public async Task<ActionResult<ApiResponse>> VerificarVagas(int turmaId)

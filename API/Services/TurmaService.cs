@@ -80,6 +80,11 @@ namespace ClubeMecanico.Application.Services
             return await _turmaRepository.GetByIdAsync(id);
         }
 
+        public async Task<List<Turma>> BuscarTurmas()
+        {
+            return await _turmaRepository.BuscarTurmas();
+        }
+
         public async Task<bool> VerificarVagasDisponiveisAsync(int turmaId)
         {
             var turma = await _turmaRepository.GetByIdAsync(turmaId);

@@ -14,5 +14,6 @@ namespace ClubeMecanico_API.Domain.Interfaces
         Task DeleteAsync(Turma turma);
         Task<bool> ExistsAsync(int id);
         Task<bool> HasAlunosMatriculadosAsync(int turmaId);
+        Task<List<Turma>> BuscarTurmas();
     }
 }

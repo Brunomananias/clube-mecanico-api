@@ -11,5 +11,6 @@ namespace ClubeMecanico_API.Domain.Interfaces
         Task<bool> VerificarVagasDisponiveisAsync(int turmaId);
         Task<Turma> AtualizarTurmaAsync(int id, AtualizarTurmaDTO turmaDto);
         Task<bool> DeletarTurmaAsync(int id);
+        Task<List<Turma>> BuscarTurmas();
     }
 }
