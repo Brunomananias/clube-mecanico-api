@@ -114,17 +114,88 @@ public class PagamentoController : ControllerBase
 
             _logger.LogInformation($"Pedido encontrado: {pedido.Id}, Status atual: {pedido.Status}");
 
-            // 9. ATUALIZAR/CRIAR PAGAMENTO
+            // 9. ATUALIZAR/CRIAR PAGAMENTO COM TODOS OS CAMPOS
             var pagamento = pedido.Pagamento ?? new Pagamento { PedidoId = pedido.Id };
 
+            // Campos obrigatórios
             pagamento.Status = payment.Status.ToString();
             pagamento.MpPaymentId = payment.Id?.ToString();
-            pagamento.DataPagamento = DateTime.Now;
 
+            // Status detail (informações adicionais do status)
+            pagamento.StatusDetail = payment.StatusDetail;
+
+            // Tipo de pagamento e detalhes
+            if (payment.PaymentTypeId != null)
+            {
+                pagamento.TipoPagamento = payment.PaymentTypeId;
+            }
+
+            // Método de pagamento
+            if (payment.PaymentMethodId != null)
+            {
+                pagamento.MetodoPagamento = payment.PaymentMethodId;
+            }
+
+            // Bandeira do cartão (se for cartão)
+            if (payment.Card?.Cardholder?.Name != null)
+            {
+                pagamento.Bandeira = payment.Card.Cardholder.Name;
+            }
+            else if (payment.PaymentMethodId != null)
+            {
+                // Para PIX, boleto, etc
+                pagamento.Bandeira = payment.PaymentMethodId;
+            }
+
+            // Últimos dígitos do cartão
+            if (payment.Card?.LastFourDigits != null)
+            {
+                pagamento.UltimosDigitos = payment.Card.LastFourDigits;
+            }
+
+            // Parcelas
+            if (payment.Installments.HasValue)
+            {
+                pagamento.Parcelas = payment.Installments.Value;
+            }
+
+            // Valor do pagamento
+            if (payment.TransactionAmount.HasValue)
+            {
+                pagamento.Valor = payment.TransactionAmount.Value;
+            }
+            else
+            {
+                // Se não tiver no pagamento, usar o subtotal do pedido
+                pagamento.Valor = pedido.Subtotal;
+            }
+
+            // Código de transação (preference ID ou payment ID)
+            if (string.IsNullOrEmpty(pagamento.CodigoTransacao))
+            {
+                pagamento.CodigoTransacao = payment.Id?.ToString() ?? paymentId.ToString();
+            }
+
+            // Data de pagamento (apenas se aprovado)
+            if (payment.Status == MercadoPago.Resource.Payment.PaymentStatus.Approved &&
+                payment.DateApproved.HasValue)
+            {
+                pagamento.DataPagamento = payment.DateApproved.Value;
+            }
+            else
+            {
+                pagamento.DataPagamento = DateTime.Now;
+            }
+
+            // Data de criação (se for novo pagamento)
             if (pagamento.Id == 0)
             {
                 pagamento.DataCriacao = DateTime.Now;
                 _context.Pagamentos.Add(pagamento);
+            }
+            else
+            {
+                pagamento.DataCriacao = DateTime.Now; // ou manter a original se já existir
             }
 
             // 10. ATUALIZAR STATUS DO PEDIDO
@@ -136,7 +207,7 @@ public class PagamentoController : ControllerBase
                     pedido.Status = "aprovado";
                     pagamento.DataPagamento = DateTime.Now;
 
-                    // Matricular aluno nos cursos - CORRIGIDO para usar cursos_alunos
+                    // Matricular aluno nos cursos
                     await MatricularAlunoNosCursos(pedido.Id, pedido.AlunoId);
                     _logger.LogInformation($"Pedido {pedidoId} APROVADO - Aluno matriculado");
                     break;
@@ -175,14 +246,22 @@ public class PagamentoController : ControllerBase
             // 11. SALVAR ALTERAÇÕES
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation($"Pedido {pedidoId} atualizado com sucesso para status: {pedido.Status}");
+            _logger.LogInformation($"Pagamento salvo com sucesso:");
+            _logger.LogInformation($"- ID: {pagamento.Id}");
+            _logger.LogInformation($"- PedidoId: {pagamento.PedidoId}");
+            _logger.LogInformation($"- Status: {pagamento.Status}");
+            _logger.LogInformation($"- Valor: {pagamento.Valor}");
+            _logger.LogInformation($"- Método: {pagamento.MetodoPagamento}");
+            _logger.LogInformation($"- Tipo: {pagamento.TipoPagamento}");
+            _logger.LogInformation($"- MP Payment ID: {pagamento.MpPaymentId}");
+            _logger.LogInformation($"- Data Pagamento: {pagamento.DataPagamento}");
 
             return Ok();
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Erro no webhook do Mercado Pago");
-            return Ok();
+            return Ok(); // Retornar OK mesmo em erro para o Mercado Pago não reenviar
         }
     }
 
@@ -456,6 +535,162 @@ public class PagamentoController : ControllerBase
                 success = false,
                 message = ex.Message
             });
+        }
+    }
+
+    [HttpGet("listar-todos")]
+    public async Task<IActionResult> ListarTodosPagamentos(
+    [FromQuery] DateTime? dataInicio = null,
+    [FromQuery] DateTime? dataFim = null,
+    [FromQuery] string? status = null,
+    [FromQuery] string? metodoPagamento = null,
+    [FromQuery] int pagina = 1,
+    [FromQuery] int itensPorPagina = 20)
+    {
+        try
+        {
+            // Query base
+            var query = _context.Pagamentos
+                .Include(p => p.Pedido)
+                    .ThenInclude(ped => ped.Aluno)
+                .AsQueryable();
+
+            // Aplicar filtros
+            if (dataInicio.HasValue)
+            {
+                query = query.Where(p => p.DataPagamento >= dataInicio.Value);
+            }
+
+            if (dataFim.HasValue)
+            {
+                query = query.Where(p => p.DataPagamento <= dataFim.Value);
+            }
+
+            if (!string.IsNullOrEmpty(status))
+            {
+                query = query.Where(p => p.Status == status);
+            }
+
+            if (!string.IsNullOrEmpty(metodoPagamento))
+            {
+                query = query.Where(p => p.MetodoPagamento == metodoPagamento);
+            }
+
+            // Total de registros (para paginação)
+            var totalRegistros = await query.CountAsync();
+            var totalPaginas = (int)Math.Ceiling(totalRegistros / (double)itensPorPagina);
+
+            // Aplicar ordenação e paginação
+            var pagamentos = await query
+                .OrderByDescending(p => p.DataPagamento)
+                .Skip((pagina - 1) * itensPorPagina)
+                .Take(itensPorPagina)
+                .Select(p => new
+                {
+                    p.Id,
+                    p.PedidoId,
+                    NumeroPedido = p.Pedido != null ? p.Pedido.NumeroPedido : "N/A",
+                    Aluno = p.Pedido != null && p.Pedido.Aluno != null
+                        ? new { p.Pedido.Aluno.Id, p.Pedido.Aluno.Nome_Completo, p.Pedido.Aluno.Email }
+                        : null,
+                    p.MetodoPagamento,
+                    p.Valor,
+                    p.Status,
+                    StatusDetail = p.StatusDetail,
+                    p.CodigoTransacao,
+                    p.DataPagamento,
+                    p.DataCriacao,
+                    p.MpPaymentId,
+                    p.TipoPagamento,
+                    p.Parcelas,
+                    p.Bandeira,
+                    p.UltimosDigitos
+                })
+                .ToListAsync();
+
+            // Estatísticas
+            var estatisticas = new
+            {
+                TotalAprovados = await _context.Pagamentos.CountAsync(p => p.Status == "approved"),
+                TotalPendentes = await _context.Pagamentos.CountAsync(p => p.Status == "pending"),
+                TotalCancelados = await _context.Pagamentos.CountAsync(p =>
+                    p.Status == "cancelled" || p.Status == "rejected"),
+                ValorTotalAprovado = await _context.Pagamentos
+                    .Where(p => p.Status == "approved")
+                    .SumAsync(p => p.Valor)
+            };
+
+            return Ok(new
+            {
+                PaginaAtual = pagina,
+                TotalPaginas = totalPaginas,
+                TotalRegistros = totalRegistros,
+                ItensPorPagina = itensPorPagina,
+                Pagamentos = pagamentos,
+                Estatisticas = estatisticas
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao listar pagamentos");
+            return StatusCode(500, new { message = "Erro interno ao listar pagamentos" });
+        }
+    }
+
+    [HttpGet("estatisticas")]
+    [Authorize]
+    public async Task<IActionResult> ObterEstatisticas([FromQuery] int? mes = null, [FromQuery] int? ano = null)
+    {
+        try
+        {
+            var dataAtual = DateTime.Now;
+            var mesAtual = mes ?? dataAtual.Month;
+            var anoAtual = ano ?? dataAtual.Year;
+
+            var inicioMes = new DateTime(anoAtual, mesAtual, 1);
+            var fimMes = inicioMes.AddMonths(1).AddDays(-1);
+
+            // Pagamentos do mês
+            var pagamentosMes = await _context.Pagamentos
+                .Where(p => p.DataPagamento >= inicioMes && p.DataPagamento <= fimMes)
+                .ToListAsync();
+
+            // Pagamentos aprovados do mês
+            var aprovadosMes = pagamentosMes
+                .Where(p => p.Status == "approved")
+                .ToList();
+
+            var porMetodoPagamento = aprovadosMes
+                .GroupBy(p => p.MetodoPagamento)
+                .Select(g => new
+                {
+                    Metodo = g.Key ?? "Não informado",
+                    Valor = g.Sum(p => p.Valor),
+                    Quantidade = g.Count(),
+                    Porcentagem = aprovadosMes.Count > 0 ?
+                        (g.Count() * 100.0 / aprovadosMes.Count) : 0
+                })
+                .ToList();
+
+            return Ok(new
+            {
+                Mes = mesAtual,
+                Ano = anoAtual,
+                TotalRecebido = aprovadosMes.Sum(p => p.Valor),
+                TotalPagamentos = pagamentosMes.Count,
+                Aprovados = aprovadosMes.Count,
+                Pendentes = pagamentosMes.Count(p => p.Status == "pending"),
+                Cancelados = pagamentosMes.Count(p =>
+                    p.Status == "cancelled" || p.Status == "rejected"),
+                MediaDiaria = aprovadosMes.Count > 0 ?
+                    aprovadosMes.Sum(p => p.Valor) / DateTime.DaysInMonth(anoAtual, mesAtual) : 0,
+                PorMetodoPagamento = porMetodoPagamento
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro ao obter estatísticas");
+            return StatusCode(500, new { message = "Erro interno ao obter estatísticas" });
         }
     }
 }
