@@ -1,6 +1,7 @@
 ﻿using ClubeMecanico.Domain.Interfaces;
 using ClubeMecanico_API.Domain.Entities;
 using ClubeMecanico_API.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
 namespace ClubeMecanico_API.Infrastructure.Repositories
@@ -20,6 +21,7 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
                 .FirstOrDefaultAsync(c => c.Id == id);
         }
 
+        [Authorize]
         public async Task<IEnumerable<Curso>> GetAllAsync()
         {
             return await _context.Cursos

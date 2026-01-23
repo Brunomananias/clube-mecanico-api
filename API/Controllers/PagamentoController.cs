@@ -287,6 +287,24 @@ public class PagamentoController : ControllerBase
 
                 if (cursoAlunoExistente == null)
                 {
+                    // **ATUALIZAR VAGAS DISPONÍVEIS DA TURMA**
+                    if (item.Turma != null && item.TurmaId.HasValue)
+                    {
+                        // Buscar a turma para atualizar
+                        var turma = await _context.Turmas.FindAsync(item.TurmaId.Value);
+                        if (turma != null && turma.VagasDisponiveis > 0)
+                        {
+                            turma.VagasDisponiveis -= 1;
+                            _context.Turmas.Update(turma);
+                            _logger.LogInformation($"Vaga subtraída da turma {item.TurmaId}. Vagas disponíveis: {turma.VagasDisponiveis}");
+                        }
+                        else if (turma != null && turma.VagasDisponiveis <= 0)
+                        {
+                            _logger.LogWarning($"Turma {item.TurmaId} não tem vagas disponíveis");
+                            // Aqui você pode lançar uma exceção ou tratar de outra forma
+                        }
+                    }
+
                     // Criar novo registro na tabela cursos_alunos
                     var cursoAluno = new CursoAluno
                     {
@@ -308,6 +326,19 @@ public class PagamentoController : ControllerBase
                     {
                         cursoAlunoExistente.Status = "ativo";
                         cursoAlunoExistente.DataMatricula = DateTime.Now;
+
+                        // **ATUALIZAR VAGAS DISPONÍVEIS DA TURMA SE A MATRÍCULA ESTAVA INATIVA**
+                        if (item.Turma != null && item.TurmaId.HasValue)
+                        {
+                            var turma = await _context.Turmas.FindAsync(item.TurmaId.Value);
+                            if (turma != null && turma.VagasDisponiveis > 0)
+                            {
+                                turma.VagasDisponiveis -= 1;
+                                _context.Turmas.Update(turma);
+                                _logger.LogInformation($"Vaga subtraída da turma {item.TurmaId} ao reativar matrícula. Vagas disponíveis: {turma.VagasDisponiveis}");
+                            }
+                        }
+
                         _logger.LogInformation($"Matrícula do aluno {alunoId} no curso {item.CursoId} reativada");
                     }
                     else
@@ -325,40 +356,6 @@ public class PagamentoController : ControllerBase
             throw;
         }
     }
-
-
-    private async Task MatricularAluno(int pedidoId, int alunoId, List<ItemPedido> itensPedido)
-    {
-        if (itensPedido == null || !itensPedido.Any())
-            return;
-
-        // Para cada item no pedido, matricular o aluno
-        foreach (var item in itensPedido)
-        {
-            var matricula = new CursoAluno
-            {
-                AlunoId = alunoId,
-                CursoId = item.CursoId,
-                DataMatricula = DateTime.UtcNow,
-                Status = "Ativo"
-            };
-
-            _context.CursosAlunos.Add(matricula);
-        }
-
-        // Limpar carrinho temporário do aluno
-        var carrinhoItens = await _context.CarrinhoTemporario
-            .Where(c => c.UsuarioId == alunoId)
-            .ToListAsync();
-
-        if (carrinhoItens.Any())
-        {
-            _context.CarrinhoTemporario.RemoveRange(carrinhoItens);
-        }
-
-        await _context.SaveChangesAsync();
-    }
-
 
     [HttpPost("criar-pagamento")]
     public async Task<IActionResult> CriarPagamento([FromBody] PagamentoRequest request)
@@ -593,6 +590,18 @@ public class PagamentoController : ControllerBase
                     Aluno = p.Pedido != null && p.Pedido.Aluno != null
                         ? new { p.Pedido.Aluno.Id, p.Pedido.Aluno.Nome_Completo, p.Pedido.Aluno.Email }
                         : null,
+                    Itens = p.Pedido.ItensPedido.Select(i => new
+                    {
+                        i.Id,
+                        i.CursoId,
+                        i.NomeCurso,
+                        i.Preco,
+                        i.TurmaId,
+                        i.Turma.DataInicio,
+                        i.Turma.DataFim,
+                        Horario = i.Turma != null ? i.Turma.Horario : null,
+                        StatusTurma = i.Turma != null ? i.Turma.Status : null
+                    }).ToList(),
                     p.MetodoPagamento,
                     p.Valor,
                     p.Status,
