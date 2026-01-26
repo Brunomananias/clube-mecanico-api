@@ -45,6 +45,8 @@ namespace YourProject.Repositories
         {
             return await _context.Usuarios
                 .Include(u => u.Enderecos.Where(e => e.Ativo))
+                .Include(u => u.CursosAlunos)
+                    .ThenInclude(ca => ca.Curso)
                 .Where(u => u.Ativo)
                 .OrderBy(u => u.Nome_Completo)
                 .ToListAsync();

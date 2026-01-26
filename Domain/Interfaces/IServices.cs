@@ -9,7 +9,7 @@ namespace ClubeMecanico.Application.Interfaces
     {
         // Métodos síncronos (para compatibilidade)
         Usuario? AuthenticateUser(string email, string password);
-        string GenerateJwtToken(long userId, string email);
+        string GenerateJwtToken(long userId, string email, long tipo);
         string HashPassword(string password);
 
         // Métodos assíncronos
@@ -42,6 +42,8 @@ namespace ClubeMecanico.Application.Interfaces
         Task<CursoAluno> MatricularAlunoAsync(MatricularAlunoCursoDTO matriculaDto, int usuarioId);
         Task<IEnumerable<CursoAluno>> BuscarCursosAlunos(int idAluno);
         Task<bool> DeletarCurso(int id);
+        Task<bool> AdicionarCertificado(AdicionarCertificadoRequest certificado);
+        Task<IEnumerable<Certificado>> BuscarCertificado(int cursoAlunoId);
     }
 
     public class ResultadoPagamento

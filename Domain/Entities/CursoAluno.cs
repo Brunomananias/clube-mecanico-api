@@ -11,7 +11,7 @@ namespace ClubeMecanico_API.Domain.Entities
         public string Status { get; set; }
         public int Progresso { get; set; }
         public DateTime DataMatricula { get; set; }
-        public DateTime? DataConclusao { get; set; }
+        public DateTime? DataConclusao { get; set; } = null;
 
         // Navegação
         public virtual Usuario Aluno { get; set; }

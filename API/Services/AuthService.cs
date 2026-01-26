@@ -143,32 +143,40 @@ public class AuthService : IAuthService
 
         return usuario;
     }
-    public string GenerateJwtToken(long userId, string email)
+    // No seu AuthService.cs
+    public string GenerateJwtToken(long userId, string email, long tipoUsuario)
     {
-        // Use a configuração correta do seu appsettings.json
-        var key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:Key"]
-            ?? throw new InvalidOperationException("JWT Key não configurada"));
+        var key = Encoding.ASCII.GetBytes(_configuration["JwtSettings:Key"]);
+        var issuer = _configuration["JwtSettings:Issuer"] ?? "clube-mecanico-api";
+        var audience = _configuration["JwtSettings:Audience"] ?? "clube-mecanico-app";
 
-        var expiresHours = _configuration.GetValue<int>("Jwt:ExpireHours", 24);
+        var claims = new[]
+        {
+        new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
+        new Claim(JwtRegisteredClaimNames.Email, email),
+        new Claim(ClaimTypes.Role, tipoUsuario == 1 ? "admin" : "aluno"),
+        new Claim("tipo", tipoUsuario.ToString()),
+        new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+    };
 
-        var tokenHandler = new JwtSecurityTokenHandler();
         var tokenDescriptor = new SecurityTokenDescriptor
         {
-            Subject = new ClaimsIdentity(new[]
-            {
-                new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
-                new Claim(ClaimTypes.Email, email)
-                // Adicione outras claims conforme necessário
-            }),
-            Expires = DateTime.UtcNow.AddHours(expiresHours),
+            Subject = new ClaimsIdentity(claims),
+            Expires = DateTime.UtcNow.AddHours(24),
+            Issuer = issuer,
+            Audience = audience,
             SigningCredentials = new SigningCredentials(
                 new SymmetricSecurityKey(key),
-                SecurityAlgorithms.HmacSha256Signature
-            )
+                SecurityAlgorithms.HmacSha256Signature)
         };
 
+        var tokenHandler = new JwtSecurityTokenHandler();
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        // Para debug, decodifique e mostre o token gerado
+        var decodedToken = tokenHandler.ReadJwtToken(tokenString);
+        return tokenString;
     }
 
     public string HashPassword(string password)

@@ -1,6 +1,8 @@
 ﻿using ClubeMecanico.Domain.Interfaces;
+using ClubeMecanico_API.API.DTOs.Requests;
 using ClubeMecanico_API.Domain.Entities;
 using ClubeMecanico_API.Infrastructure.Data;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 
@@ -82,6 +84,38 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
                 .Where(t => t.CursoId == cursoId && t.Status == "ATIVA")
                 .OrderBy(t => t.DataInicio)
                 .ToListAsync();
+        }
+
+        public async Task<IEnumerable<Certificado>> BuscarCertificado(int cursoAlunoId)
+        {
+            return await _context.CertificadosCurso
+                .Where(c => c.CursoAlunoId == cursoAlunoId)
+                .ToListAsync();
+        }
+
+
+        public async Task<bool> AdicionarCertificado(AdicionarCertificadoRequest request)
+        {
+
+            var cursoAluno = await _context.CursosAlunos
+                                                        .FirstOrDefaultAsync(ca =>
+                                                                            ca.Id == request.CursoAlunoId);
+
+            if (cursoAluno == null)
+                throw new ArgumentException("Matrícula (CursoAluno) não encontrada para o aluno e curso informados");
+
+            var certificado = new Certificado
+            {
+                CursoAlunoId = request.CursoAlunoId,
+                DataConclusao = request.DataConclusao,
+                CargaHoraria = request.CargaHoraria,
+                UrlCertificado = request.UrlCertificado,
+                DataEmissao = request.DataEmissao
+            };
+
+            await _context.CertificadosCurso.AddAsync(certificado);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
         public async Task<IEnumerable<CursoAluno>> GetCursosComTurmasPorAluno(int alunoId)

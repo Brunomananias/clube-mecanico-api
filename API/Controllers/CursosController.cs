@@ -146,6 +146,29 @@ namespace ClubeMecanico_API.API.Controllers
             }
         }
 
+        [HttpGet("certificado")]
+        public async Task<IActionResult> BuscarCertificado(int cursoAlunoId)
+        {
+            try
+            {
+                var certificado = await _cursoService.BuscarCertificado(cursoAlunoId);
+                return Ok(new ApiResponse
+                {
+                    Success = true,
+                    Dados = certificado
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao buscar turmas: {ex.Message}");
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = "Erro interno ao buscar turmas"
+                });
+            }
+        }
+
         // API/Controllers/CursosController.cs - Adicione este método
         [HttpPost("matricular-aluno")]
         public async Task<IActionResult> MatricularAluno([FromBody] MatricularAlunoCursoDTO matriculaDto)
@@ -154,21 +177,7 @@ namespace ClubeMecanico_API.API.Controllers
             {
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
-
-                // Obter ID do usuário autenticado (aluno ou admin)
-                var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-                if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int usuarioId))
-                    return Unauthorized(new { message = "Usuário não autenticado" });
-
-                // Verificar se o usuário tem permissão (aluno ou administrador)
-                var roleClaim = User.FindFirst(ClaimTypes.Role);
-                var isAdmin = roleClaim?.Value == "1" || roleClaim?.Value == "Administrador";
-
-                // Se não for admin, só pode se matricular ele mesmo
-                if (!isAdmin && usuarioId != matriculaDto.AlunoId)
-                    return Forbid();
-
-                var matricula = await _cursoService.MatricularAlunoAsync(matriculaDto, usuarioId);
+                var matricula = await _cursoService.MatricularAlunoAsync(matriculaDto, 16);
 
                 return Ok(new ApiResponse
                 {
@@ -212,6 +221,30 @@ namespace ClubeMecanico_API.API.Controllers
             }
         }
 
+        [HttpPost("cadastrar-certificado")]
+        public async Task<IActionResult> CadastrarCertificado([FromBody] AdicionarCertificadoRequest request)
+        {
+            try
+            {
+                 await _cursoService.AdicionarCertificado(request);
+
+                return Ok(new ApiResponse
+                {
+                    Success = true,
+                    Mensagem = "Certificado cadastrado com sucesso!",
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Erro ao matricular aluno: {ex.Message}");
+                return StatusCode(500, new ApiResponse
+                {
+                    Success = false,
+                    Mensagem = "Erro interno no servidor ao realizar matrícula"
+                });
+            }
+
+        }
         [HttpPut("{id}")]
         public async Task<IActionResult> AtualizarCurso(int id, [FromBody] AtualizarCursoDTO cursoDto)
         {

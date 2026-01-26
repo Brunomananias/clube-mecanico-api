@@ -123,7 +123,17 @@ namespace ClubeMecanico.Application.Services
             return await _cursoRepository.GetTurmasByCursoIdAsync(cursoId);
         }
 
-        // Application/Services/CursoService.cs - Implemente o método
+        public async Task<IEnumerable<Certificado>> BuscarCertificado(int cursoAlunoId)
+        {
+            return await _cursoRepository.BuscarCertificado(cursoAlunoId);
+        }
+
+
+        public async Task<bool> AdicionarCertificado(AdicionarCertificadoRequest certificado)
+        {
+            return await _cursoRepository.AdicionarCertificado(certificado);
+        }
+
         public async Task<CursoAluno> MatricularAlunoAsync(MatricularAlunoCursoDTO matriculaDto, int usuarioId)
         {
             try
@@ -146,29 +156,6 @@ namespace ClubeMecanico.Application.Services
                 if (curso == null)
                     throw new InvalidOperationException($"Curso com ID {matriculaDto.CursoId} não encontrado");
 
-                //// Verificar se o aluno existe
-                //var aluno = await _alunoRepository.GetByIdAsync(matriculaDto.AlunoId);
-                //if (aluno == null)
-                //    throw new InvalidOperationException($"Aluno com ID {matriculaDto.AlunoId} não encontrado");
-
-                //// Verificar se o aluno já está matriculado nesta turma
-                //var matriculaExistente = await _cursoAlunoRepository
-                //    .GetMatriculaPorAlunoETurmaAsync(matriculaDto.AlunoId, matriculaDto.TurmaId);
-
-                //if (matriculaExistente != null)
-                //    throw new InvalidOperationException("Aluno já está matriculado nesta turma");
-
-                //// Verificar se há vagas disponíveis na turma (se aplicável)
-                //if (turma.VagasLimite > 0)
-                //{
-                //    var totalMatriculas = await _cursoAlunoRepository
-                //        .CountMatriculasPorTurmaAsync(matriculaDto.TurmaId);
-
-                //    if (totalMatriculas >= turma.VagasLimite)
-                //        throw new InvalidOperationException("Não há vagas disponíveis nesta turma");
-                //}
-
-                // Criar objeto de matrícula
                 var cursoAluno = new CursoAluno
                 {
                     AlunoId = matriculaDto.AlunoId,

@@ -31,7 +31,7 @@ public class AuthController : ControllerBase
         if (user == null)
             return Unauthorized(new { message = "Credenciais inválidas" });
 
-        var token = _authService.GenerateJwtToken(user.Id, user.Email);
+        var token = _authService.GenerateJwtToken(user.Id, user.Email, user.Tipo);
 
         return Ok(new
         {
@@ -71,7 +71,7 @@ public class AuthController : ControllerBase
                 request.Endereco.Estado,
                 request.Endereco.Tipo);
 
-            var token = _authService.GenerateJwtToken(usuario!.Id, usuario.Email);
+            var token = _authService.GenerateJwtToken(usuario!.Id, usuario.Email, usuario.Tipo);
 
             return Ok(new
             {

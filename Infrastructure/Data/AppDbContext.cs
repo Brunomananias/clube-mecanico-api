@@ -14,7 +14,7 @@ namespace ClubeMecanico_API.Infrastructure.Data
         public DbSet<Curso> Cursos { get; set; }
         public DbSet<Turma> Turmas { get; set; }
         public DbSet<CursoAluno> CursosAlunos { get; set; }
-        public DbSet<Certificado> Certificados { get; set; }
+        public DbSet<Certificado> CertificadosCurso { get; set; }
         public DbSet<ConteudoComplementar> ConteudosComplementares { get; set; }
         public DbSet<Endereco> Enderecos { get; set; }
         public DbSet<CarrinhoTemporario> CarrinhoTemporario { get; set; }
@@ -30,7 +30,7 @@ namespace ClubeMecanico_API.Infrastructure.Data
             modelBuilder.Entity<Curso>().ToTable("cursos");
             modelBuilder.Entity<Turma>().ToTable("turmas");
             modelBuilder.Entity<CursoAluno>().ToTable("cursos_alunos");
-            modelBuilder.Entity<Certificado>().ToTable("certificados");
+            modelBuilder.Entity<Certificado>().ToTable("certificados_curso");
             modelBuilder.Entity<ConteudoComplementar>().ToTable("conteudos_complementares");
             modelBuilder.Entity<CarrinhoTemporario>().ToTable("carrinho_temporario");
             modelBuilder.Entity<ItemPedido>().ToTable("itens_pedido");
@@ -303,11 +303,6 @@ namespace ClubeMecanico_API.Infrastructure.Data
                       .HasForeignKey(ca => ca.AlunoId)
                       .OnDelete(DeleteBehavior.Cascade);
 
-                entity.HasMany(u => u.Certificados)
-                      .WithOne(c => c.Aluno)
-                      .HasForeignKey(c => c.AlunoId)
-                      .OnDelete(DeleteBehavior.Cascade);
-
                 entity.HasMany(u => u.Enderecos)
                       .WithOne(e => e.Usuario)
                       .HasForeignKey(e => e.UsuarioId)
@@ -516,7 +511,7 @@ namespace ClubeMecanico_API.Infrastructure.Data
                 entity.Property(e => e.AlunoId).IsRequired().HasColumnName("aluno_id");
                 entity.Property(e => e.CursoId).IsRequired().HasColumnName("curso_id");
                 entity.Property(e => e.TurmaId).IsRequired().HasColumnName("turma_id");
-                entity.Property(e => e.DataConclusao).IsRequired().HasColumnName("data_conclusao");
+                entity.Property(e => e.DataConclusao).HasColumnName("data_conclusao");
                 entity.Property(e => e.DataMatricula).IsRequired().HasColumnName("data_matricula");
                 entity.Property(e => e.Status).IsRequired().HasConversion<string>();
 
@@ -547,34 +542,30 @@ namespace ClubeMecanico_API.Infrastructure.Data
             // Configuração Certificado (RESOLVE O NOVO ERRO)
             modelBuilder.Entity<Certificado>(entity =>
             {
-                entity.HasKey(e => e.Id); // CHAVE PRIMÁRIA DEFINIDA
-                entity.Property(e => e.CodigoCertificado).IsRequired().HasMaxLength(100);
-                entity.Property(e => e.AlunoId).IsRequired();
-                entity.Property(e => e.CursoId).IsRequired();
-                entity.Property(e => e.DataConclusao).IsRequired();
-                entity.Property(e => e.CargaHoraria).IsRequired();
-                entity.Property(e => e.UrlCertificado).HasMaxLength(500);
-                entity.Property(e => e.DataEmissao).IsRequired();
+                entity.Property(e => e.CursoAlunoId)
+                    .IsRequired()
+                    .HasColumnName("curso_aluno_id");
 
-                // Relacionamento com Usuario (Aluno)
-                entity.HasOne(c => c.Aluno)
-                      .WithMany(u => u.Certificados)
-                      .HasForeignKey(c => c.AlunoId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.DataConclusao)
+                    .IsRequired()
+                    .HasColumnName("data_conclusao");
 
-                // Relacionamento com Curso
-                entity.HasOne(c => c.Curso)
-                      .WithMany()
-                      .HasForeignKey(c => c.CursoId)
-                      .OnDelete(DeleteBehavior.Cascade);
+                entity.Property(e => e.CargaHoraria)
+                    .IsRequired()
+                    .HasColumnName("carga_horaria");
 
-                // Índice único para código do certificado
-                entity.HasIndex(e => e.CodigoCertificado).IsUnique();
+                entity.Property(e => e.UrlCertificado)
+                    .HasMaxLength(500)
+                    .HasColumnName("url_certificado");
+
+                entity.Property(e => e.DataEmissao)
+                    .IsRequired()
+                    .HasColumnName("data_emissao");
             });
 
             modelBuilder.Entity<ConteudoComplementar>(entity =>
             {
-                entity.HasKey(e => e.Id); // CHAVE PRIMÁRIA OBRIGATÓRIA
+                entity.HasKey(e => e.Id);
 
                 entity.Property(e => e.CursoId).IsRequired().HasColumnName("curso_id");
                 entity.Property(e => e.Titulo).IsRequired().HasMaxLength(200);

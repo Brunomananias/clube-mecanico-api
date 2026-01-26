@@ -1,4 +1,5 @@
-﻿using ClubeMecanico_API.Domain.Entities;
+﻿using ClubeMecanico_API.API.Controllers;
+using ClubeMecanico_API.Domain.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -136,7 +136,7 @@ namespace YourProject.Controllers
 
         // DELETE: api/usuarios/5
         [HttpDelete("{id}")]
-        [Authorize(Roles = "admin")]
+        [Authorize] 
         public async Task<IActionResult> DeleteUsuario(int id)
         {
             try

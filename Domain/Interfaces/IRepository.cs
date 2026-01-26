@@ -1,4 +1,5 @@
 ﻿using ClubeMecanico.Domain.Interfaces;
+using ClubeMecanico_API.API.DTOs.Requests;
 using ClubeMecanico_API.Domain.Entities;
 
 namespace ClubeMecanico.Domain.Interfaces
@@ -23,14 +24,8 @@ namespace ClubeMecanico.Domain.Interfaces
         Task<IEnumerable<Turma>> GetTurmasByCursoIdAsync(int cursoId);
         Task<IEnumerable<CursoAluno>> GetCursosComTurmasPorAluno(int idAluno);
         Task<bool> DeletarCurso(int id);
-    }
-
-    public interface ICursoAlunoRepository : IRepository<CursoAluno>
-    {
-        Task<CursoAluno> GetMatriculaPorAlunoETurmaAsync(int alunoId, int turmaId);
-        Task<int> CountMatriculasPorTurmaAsync(int turmaId);
-        Task<IEnumerable<CursoAluno>> GetMatriculasPorAlunoAsync(int alunoId);
-        Task<IEnumerable<CursoAluno>> GetMatriculasPorTurmaAsync(int turmaId);
+        Task<bool> AdicionarCertificado(AdicionarCertificadoRequest certificado);
+        Task<IEnumerable<Certificado>> BuscarCertificado(int cursoAlunoId);
     }
 }
 
