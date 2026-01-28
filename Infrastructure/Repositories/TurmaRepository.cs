@@ -97,13 +97,14 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
 
         public async Task DeleteAsync(Turma turma)
         {
-            // Soft delete - apenas marca como cancelada
+            _context.Turmas.Remove(turma);
+            await _context.SaveChangesAsync();
+        }
+
+        public async Task AtualizarStatusTurma(Turma turma)
+        {
             turma.Status = "CANCELADA";
             await UpdateAsync(turma);
-
-            // Ou para hard delete:
-            // _context.Turmas.Remove(turma);
-            // await _context.SaveChangesAsync();
         }
 
         public async Task<bool> ExistsAsync(int id)
@@ -116,6 +117,17 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
             return await _context.CursosAlunos
                 .AnyAsync(ca => ca.TurmaId == turmaId &&
                                ca.Status != "CANCELADO");
+        }
+
+        public async Task<bool> DeletarTurma(int id)
+        {
+            var turma = await _context.Turmas.FindAsync(id);
+            if (turma == null)
+                return false;
+
+            _context.Turmas.Remove(turma);
+            await _context.SaveChangesAsync();
+            return true;
         }
 
     }

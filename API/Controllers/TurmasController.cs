@@ -4,6 +4,7 @@ using ClubeMecanico.Application.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using ClubeMecanico_API.API.DTOs.Requests;
 using ClubeMecanico_API.Domain.Interfaces;
+using ClubeMecanico.Application.Services;
 
 namespace ClubeMecanico_API.API.Controllers
 {
@@ -191,6 +192,13 @@ namespace ClubeMecanico_API.API.Controllers
                     Mensagem = "Erro ao verificar vagas"
                 });
             }
+        }
+
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeletarCurso(int id)
+        {
+            await _turmaService.DeletarTurmaAsync(id);
+            return Ok();
         }
     }
 }

@@ -13,6 +13,8 @@ using MercadoPago.Client.Common;
 using MercadoPago.Client.Payment;
 using MercadoPago.Client;
 using System.Text.Json;
+using System.Net.Mail;
+using System.Net;
 
 [ApiController]
 [Route("api/[controller]")]
@@ -21,15 +23,18 @@ public class PagamentoController : ControllerBase
     private readonly IConfiguration _configuration;
     private readonly AppDbContext _context;
     private readonly ILogger<PagamentoController> _logger;
+    private readonly IServiceProvider _serviceProvider;
     // Injeta o IConfiguration no construtor
     public PagamentoController(
        IConfiguration configuration,
        AppDbContext context,
-       ILogger<PagamentoController> logger)
+       ILogger<PagamentoController> logger,
+       IServiceProvider serviceProvider)
     {
         _configuration = configuration;
         _context = context;
         _logger = logger;
+        _serviceProvider = serviceProvider;
     }
 
     [HttpPost("webhook")]
@@ -206,61 +211,41 @@ public class PagamentoController : ControllerBase
                 case "approved":
                     pedido.Status = "aprovado";
                     pagamento.DataPagamento = DateTime.Now;
-
-                    // Matricular aluno nos cursos
                     await MatricularAlunoNosCursos(pedido.Id, pedido.AlunoId);
-                    _logger.LogInformation($"Pedido {pedidoId} APROVADO - Aluno matriculado");
+                    await EnviarEmailPagamentoAprovado(pedido, pagamento);
                     break;
 
                 case "pending":
                     pedido.Status = "pendente";
-                    _logger.LogInformation($"Pedido {pedidoId} PENDENTE");
                     break;
 
                 case "in_process":
                 case "in_mediation":
                     pedido.Status = "em_processamento";
-                    _logger.LogInformation($"Pedido {pedidoId} EM PROCESSAMENTO");
                     break;
 
                 case "cancelled":
                 case "rejected":
                     pedido.Status = "cancelado";
-                    _logger.LogInformation($"Pedido {pedidoId} CANCELADO");
                     break;
 
                 case "refunded":
                 case "charged_back":
                     pedido.Status = "reembolsado";
-                    _logger.LogInformation($"Pedido {pedidoId} REEMBOLSADO");
                     break;
 
                 default:
                     pedido.Status = "desconhecido";
-                    _logger.LogWarning($"Pedido {pedidoId} status desconhecido: {status}");
                     break;
             }
 
             pedido.UpdatedAt = DateTime.Now;
-
-            // 11. SALVAR ALTERAÇÕES
             await _context.SaveChangesAsync();
-
-            _logger.LogInformation($"Pagamento salvo com sucesso:");
-            _logger.LogInformation($"- ID: {pagamento.Id}");
-            _logger.LogInformation($"- PedidoId: {pagamento.PedidoId}");
-            _logger.LogInformation($"- Status: {pagamento.Status}");
-            _logger.LogInformation($"- Valor: {pagamento.Valor}");
-            _logger.LogInformation($"- Método: {pagamento.MetodoPagamento}");
-            _logger.LogInformation($"- Tipo: {pagamento.TipoPagamento}");
-            _logger.LogInformation($"- MP Payment ID: {pagamento.MpPaymentId}");
-            _logger.LogInformation($"- Data Pagamento: {pagamento.DataPagamento}");
 
             return Ok();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro no webhook do Mercado Pago");
             return Ok(); // Retornar OK mesmo em erro para o Mercado Pago não reenviar
         }
     }
@@ -701,6 +686,236 @@ public class PagamentoController : ControllerBase
             _logger.LogError(ex, "Erro ao obter estatísticas");
             return StatusCode(500, new { message = "Erro interno ao obter estatísticas" });
         }
+    }
+
+    private async Task EnviarEmailPagamentoAprovado(Pedido pedido, Pagamento pagamento)
+    {
+        try
+        {
+            // 🔥 PEGAR CONFIGURAÇÕES DO AMBIENTE (Render) ou APPSETTINGS
+            var emailConfig = ObterConfiguracaoEmail();
+
+            if (string.IsNullOrEmpty(emailConfig.SenderEmail) || string.IsNullOrEmpty(emailConfig.SenderPassword))
+            {
+                _logger.LogWarning("⚠️ Configurações de email não encontradas");
+                return;
+            }
+
+            var subject = $"💰 PAGAMENTO APROVADO - Pedido #{pedido.NumeroPedido}";
+
+            // Buscar itens do pedido para detalhar
+            var itensPedido = await _context.ItensPedido
+                .Where(ip => ip.PedidoId == pedido.Id)
+                .Include(ip => ip.Curso)
+                .ToListAsync();
+
+            var cursosLista = string.Join("<br>", itensPedido.Select(ip =>
+                $"- {ip.NomeCurso} (R$ {ip.Preco:F2})"));
+
+            var body = $@"
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+        .container {{ max-width: 600px; margin: 0 auto; padding: 20px; }}
+        .header {{ background-color: #28a745; color: white; padding: 20px; text-align: center; border-radius: 5px 5px 0 0; }}
+        .content {{ background-color: #f8f9fa; padding: 20px; border: 1px solid #dee2e6; }}
+        .details {{ background-color: white; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 5px; }}
+        .footer {{ text-align: center; padding: 20px; color: #6c757d; font-size: 12px; border-top: 1px solid #dee2e6; }}
+        .value {{ color: #28a745; font-weight: bold; font-size: 18px; }}
+        .badge {{ display: inline-block; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }}
+        .badge-approved {{ background-color: #d4edda; color: #155724; }}
+        .curso-item {{ padding: 8px 0; border-bottom: 1px solid #eee; }}
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>💰 PAGAMENTO APROVADO</h1>
+            <h3>Clube do Mecânico</h3>
+        </div>
+        
+        <div class='content'>
+            <h3>📋 DETALHES DO PEDIDO</h3>
+            
+            <div class='details'>
+                <p><strong>Número do Pedido:</strong> {pedido.NumeroPedido}</p>
+                <p><strong>ID do Pedido:</strong> {pedido.Id}</p>
+                <p><strong>ID do Aluno:</strong> {pedido.AlunoId}</p>
+                <p><strong>Data do Pedido:</strong> {pedido.DataPedido:dd/MM/yyyy HH:mm}</p>
+                <p><strong>Data de Aprovação:</strong> {DateTime.Now:dd/MM/yyyy HH:mm}</p>
+                
+                <p><strong>Status:</strong> 
+                    <span class='badge badge-approved'>APROVADO ✅</span>
+                </p>
+                
+                <p><strong>Valor Total:</strong> 
+                    <span class='value'>R$ {pedido.Subtotal:F2}</span>
+                </p>
+                
+                <p><strong>Método de Pagamento:</strong> {pagamento.MetodoPagamento?.ToUpper()}</p>
+                
+                {(string.IsNullOrEmpty(pagamento.Bandeira) ? "" :
+                    $"<p><strong>Bandeira/Cartão:</strong> {pagamento.Bandeira}</p>")}
+                
+                {(string.IsNullOrEmpty(pagamento.UltimosDigitos) ? "" :
+                    $"<p><strong>Últimos 4 dígitos:</strong> **** {pagamento.UltimosDigitos}</p>")}
+                
+                {(pagamento.Parcelas > 0 ?
+                    $"<p><strong>Parcelas:</strong> {pagamento.Parcelas}x</p>" : "")}
+                
+                <p><strong>ID Mercado Pago:</strong> {pagamento.MpPaymentId}</p>
+            </div>
+            
+            <h3>📚 CURSOS COMPRADOS:</h3>
+            <div class='details'>
+                {cursosLista}
+            </div>
+            
+            <h3>📊 RESUMO:</h3>
+            <div class='details'>
+                <p>• Valor Total: R$ {pedido.Subtotal:F2}</p>
+                <p>• Quantidade de Cursos: {itensPedido.Count}</p>
+                <p>• Status: Aprovado ✅</p>
+                <p>• Aluno já foi matriculado automaticamente</p>
+            </div>
+        </div>
+        
+        <div class='footer'>
+            <p><strong>Clube do Mecânico</strong> &copy; {DateTime.Now.Year}</p>
+            <p>📍 Sistema de Notificações Automáticas</p>
+            <p>⏰ {DateTime.Now:dd/MM/yyyy HH:mm:ss}</p>
+        </div>
+    </div>
+</body>
+</html>";
+
+            // 🔥 ENVIAR EMAIL COM CONFIGURAÇÃO OBTIDA
+            await EnviarEmail(emailConfig, subject, body);
+
+            _logger.LogInformation($"✅ Email enviado para {emailConfig.AdminEmail}");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "❌ Erro ao enviar email de pagamento aprovado");
+            // Não lançar para não afetar o fluxo principal
+        }
+    }
+
+    // 🔥 MÉTODO AUXILIAR PARA OBTER CONFIGURAÇÃO DE EMAIL
+    private EmailConfig ObterConfiguracaoEmail()
+    {
+        // PRIMEIRO: Tenta pegar do serviço injetado (se configurou no Program)
+        try
+        {
+            var emailService = _serviceProvider.GetService<EmailConfig>();
+            if (emailService != null &&
+                !string.IsNullOrEmpty(emailService.SenderEmail) &&
+                !string.IsNullOrEmpty(emailService.SenderPassword))
+            {
+                _logger.LogInformation("✅ Usando configuração de email do serviço injetado");
+                return emailService;
+            }
+        }
+        catch
+        {
+            // Se falhar, continua para outras formas
+        }
+
+        // SEGUNDO: Tenta pegar do ambiente (Render) com dois underlines
+        var config = new EmailConfig();
+
+        config.SmtpServer = Environment.GetEnvironmentVariable("EmailSettings__SmtpServer")
+                           ?? "smtp.gmail.com";
+
+        if (int.TryParse(Environment.GetEnvironmentVariable("EmailSettings__SmtpPort"), out var port))
+        {
+            config.SmtpPort = port;
+        }
+        else
+        {
+            config.SmtpPort = 587;
+        }
+
+        config.SenderEmail = Environment.GetEnvironmentVariable("EmailSettings__SenderEmail");
+        config.SenderPassword = Environment.GetEnvironmentVariable("EmailSettings__SenderPassword");
+        config.AdminEmail = Environment.GetEnvironmentVariable("EmailSettings__AdminEmail")
+                           ?? "clubemecanico2026@gmail.com";
+
+        // TERCEIRO: Se ainda não encontrou, tenta do appsettings.json
+        if (string.IsNullOrEmpty(config.SenderEmail) || string.IsNullOrEmpty(config.SenderPassword))
+        {
+            config.SmtpServer = _configuration["EmailSettings:SmtpServer"] ?? "smtp.gmail.com";
+            config.SmtpPort = _configuration.GetValue<int>("EmailSettings:SmtpPort", 587);
+            config.SenderEmail = _configuration["EmailSettings:SenderEmail"];
+            config.SenderPassword = _configuration["EmailSettings:SenderPassword"];
+            config.AdminEmail = _configuration["EmailSettings:AdminEmail"] ?? "clubemecanico2026@gmail.com";
+        }
+
+        // Log para debug
+        _logger.LogDebug($"Email Config - Server: {config.SmtpServer}:{config.SmtpPort}");
+        _logger.LogDebug($"Email Config - From: {config.SenderEmail}");
+        _logger.LogDebug($"Email Config - To: {config.AdminEmail}");
+        _logger.LogDebug($"Email Config - Password configurada: {!string.IsNullOrEmpty(config.SenderPassword)}");
+
+        return config;
+    }
+
+    // 🔥 MÉTODO AUXILIAR PARA ENVIAR EMAIL
+    private async Task EnviarEmail(EmailConfig config, string subject, string body)
+    {
+        using var smtpClient = new SmtpClient(config.SmtpServer, config.SmtpPort)
+        {
+            EnableSsl = true,
+            Credentials = new NetworkCredential(config.SenderEmail, config.SenderPassword),
+            Timeout = 10000 // 10 segundos
+        };
+
+        var mailMessage = new MailMessage
+        {
+            From = new MailAddress(config.SenderEmail, "Sistema Clube do Mecânico"),
+            Subject = subject,
+            Body = body,
+            IsBodyHtml = true,
+        };
+
+        mailMessage.To.Add(config.AdminEmail);
+
+        await smtpClient.SendMailAsync(mailMessage);
+    }
+
+    // 🔥 CLASSE PARA ARMAZENAR CONFIGURAÇÕES
+    public class EmailConfig
+    {
+        public string SmtpServer { get; set; } = "smtp.gmail.com";
+        public int SmtpPort { get; set; } = 587;
+        public string SenderEmail { get; set; } = "";
+        public string SenderPassword { get; set; } = "";
+        public string AdminEmail { get; set; } = "clubemecanico2026@gmail.com";
+    }
+
+    [HttpGet("debug-email")]
+    [AllowAnonymous]
+    public IActionResult DebugEmail()
+    {
+        var resultado = new
+        {
+            // Do Environment (Render)
+            envServer = Environment.GetEnvironmentVariable("EmailSettings__SmtpServer"),
+            envEmail = Environment.GetEnvironmentVariable("EmailSettings__SenderEmail"),
+            envPassword = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("EmailSettings__SenderPassword")),
+
+            // Do appsettings.json
+            configServer = _configuration["EmailSettings:SmtpServer"],
+            configEmail = _configuration["EmailSettings:SenderEmail"],
+            configPassword = !string.IsNullOrEmpty(_configuration["EmailSettings:SenderPassword"]),
+
+            // Do ServiceProvider (se configurado)
+            temServiceProvider = _serviceProvider != null
+        };
+
+        return Ok(resultado);
     }
 }
 

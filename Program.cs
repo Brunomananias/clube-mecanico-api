@@ -17,31 +17,18 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Cors;
 
 var builder = WebApplication.CreateBuilder(args);
-
-Console.WriteLine("=".PadRight(60, '='));
-Console.WriteLine("?? DEBUG DAS VARIÁVEIS DE AMBIENTE NO RENDER");
-Console.WriteLine("=".PadRight(60, '='));
-
-// 1. Mostra todas as variáveis
 var allVars = Environment.GetEnvironmentVariables();
-Console.WriteLine($"Total de variáveis: {allVars.Count}");
 
-// Lista todas as variáveis disponíveis
 foreach (System.Collections.DictionaryEntry env in allVars)
 {
     var key = env.Key.ToString();
     var value = env.Value?.ToString();
 
-    // Mostra todas (você vai ver o que está realmente disponível)
     if (!string.IsNullOrEmpty(key) && !string.IsNullOrEmpty(value))
     {
         Console.WriteLine($"  {key.PadRight(30)} = {value}");
     }
 }
-// ========== LEITURA DE TODAS AS VARIÁVEIS DE AMBIENTE DO RENDER ==========
-Console.WriteLine("?? Carregando variáveis de ambiente...");
-
-// 1. Banco de dados
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
 var connectionStringFromEnv = Environment.GetEnvironmentVariable("ConnectionStrings__DefaultConnections");
 
@@ -70,6 +57,17 @@ var cloudinaryApiSecret = Environment.GetEnvironmentVariable("Cloudinary__ApiSec
 // 5. PIX
 var pixChavePix = Environment.GetEnvironmentVariable("Pix__ChavePix") ??
                   builder.Configuration["Pix:ChavePix"];
+
+var emailSmtpServer = Environment.GetEnvironmentVariable("EmailSettings__SmtpServer") ??
+                      builder.Configuration["EmailSettings:SmtpServer"];
+var emailSmtpPort = Environment.GetEnvironmentVariable("EmailSettings__SmtpPort") ??
+                    builder.Configuration["EmailSettings:SmtpPort"];
+var emailSenderEmail = Environment.GetEnvironmentVariable("EmailSettings__SenderEmail") ??
+                       builder.Configuration["EmailSettings:SenderEmail"];
+var emailSenderPassword = Environment.GetEnvironmentVariable("EmailSettings__SenderPassword") ??
+                          builder.Configuration["EmailSettings:SenderPassword"];
+var emailAdminEmail = Environment.GetEnvironmentVariable("EmailSettings__AdminEmail") ??
+                      builder.Configuration["EmailSettings:AdminEmail"];
 
 // ========== LOG DAS CONFIGURAÇÕES (sem expor dados sensíveis) ==========
 Console.WriteLine($"? JWT Configurado: {!string.IsNullOrEmpty(jwtKey)}");
@@ -236,6 +234,23 @@ if (!string.IsNullOrEmpty(pixChavePix))
     Console.WriteLine("? PIX configurado com sucesso");
 }
 
+if (!string.IsNullOrEmpty(emailSenderEmail) && !string.IsNullOrEmpty(emailSenderPassword))
+{
+    builder.Services.AddSingleton(new EmailConfig
+    {
+        SmtpServer = emailSmtpServer ?? "smtp.gmail.com",
+        SmtpPort = int.TryParse(emailSmtpPort, out var port) ? port : 587,
+        SenderEmail = emailSenderEmail,
+        SenderPassword = emailSenderPassword,
+        AdminEmail = emailAdminEmail ?? "clubemecanico2026@gmail.com"
+    });
+    Console.WriteLine("? Email configurado com sucesso");
+}
+else
+{
+    Console.WriteLine("?? Email não configurado - Notificações não serão enviadas");
+}
+
 // 10. Controllers
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -343,7 +358,6 @@ app.Use(async (context, next) =>
     await next();
 });
 
-// ========== MIDDLEWARE DE CONFIGURAÇÃO ==========
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -370,20 +384,6 @@ app.UseAuthorization();
 
 app.MapControllers();
 app.MapGet("/", () => Results.Redirect("/swagger"));
-
-// ========== LOG INICIAL ==========
-Console.WriteLine("\n?? Clube Mecânico API INICIADA");
-Console.WriteLine("=".PadRight(50, '='));
-Console.WriteLine($"?? Ambiente: {app.Environment.EnvironmentName}");
-Console.WriteLine($"?? JWT: {(string.IsNullOrEmpty(jwtKey) ? "? NÃO CONFIGURADO" : "? CONFIGURADO")}");
-Console.WriteLine($"?? Mercado Pago: {(string.IsNullOrEmpty(mercadoPagoToken) ? "? NÃO CONFIGURADO" : "? CONFIGURADO")}");
-Console.WriteLine($"?? Cloudinary: {(string.IsNullOrEmpty(cloudinaryCloudName) ? "? NÃO CONFIGURADO" : "? CONFIGURADO")}");
-Console.WriteLine($"?? PIX: {(string.IsNullOrEmpty(pixChavePix) ? "? NÃO CONFIGURADO" : "? CONFIGURADO")}");
-Console.WriteLine("=".PadRight(50, '='));
-Console.WriteLine($"?? URL: https://{Environment.GetEnvironmentVariable("RENDER_SERVICE_NAME")}.onrender.com");
-Console.WriteLine($"?? Health Check: /health");
-Console.WriteLine($"?? Swagger: /swagger\n");
-
 app.Run();
 
 // ========== CLASSES AUXILIARES ==========
@@ -398,4 +398,13 @@ public class TokenServiceConfig
 public class PixConfig
 {
     public string ChavePix { get; set; } = string.Empty;
+}
+
+public class EmailConfig
+{
+    public string SmtpServer { get; set; } = "smtp.gmail.com";
+    public int SmtpPort { get; set; } = 587;
+    public string SenderEmail { get; set; } = string.Empty;
+    public string SenderPassword { get; set; } = string.Empty;
+    public string AdminEmail { get; set; } = "clubemecanico2026@gmail.com";
 }
