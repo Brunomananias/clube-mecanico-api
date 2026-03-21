@@ -38,10 +38,28 @@ namespace ClubeMecanico_API.Infrastructure.Repositories
 
         public async Task<List<Turma>> BuscarTurmas()
         {
+            var turmasExpiradas = await _context.Turmas
+                .Where(t => DateTime.Now.Date > t.DataFim.Date
+                            && t.VagasDisponiveis == t.VagasTotal)
+                .ToListAsync();
+
+            if (turmasExpiradas.Any())
+            {
+                var turmasIds = turmasExpiradas.Select(t => t.Id).ToList();
+                var carrinhoItens = await _context.CarrinhoTemporario
+                    .Where(c => turmasIds.Contains(c.TurmaId.Value))
+                    .ToListAsync();
+                if (carrinhoItens.Any())
+                {
+                    _context.CarrinhoTemporario.RemoveRange(carrinhoItens);
+                }
+                _context.Turmas.RemoveRange(turmasExpiradas);
+                await _context.SaveChangesAsync();
+            }
             return await _context.Turmas
-           .Include(t => t.Curso)
-           .Include(t => t.CursosAlunos)
-           .ToListAsync();
+                .Include(t => t.Curso)
+                .Include(t => t.CursosAlunos)
+                .ToListAsync();
         }
 
         public async Task<IEnumerable<Turma>> GetAllAsync()
